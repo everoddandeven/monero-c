@@ -8,6 +8,7 @@ set(CMAKE_POSITION_INDEPENDENT_CODE ON)
 
 include_directories(
     ${PROJECT_SOURCE_DIR}/src/utils
+    ${PROJECT_SOURCE_DIR}/src/daemon
     ${CMAKE_CURRENT_SOURCE_DIR}/external/monero-cpp/src
     ${CMAKE_CURRENT_SOURCE_DIR}/external/monero-cpp/external/monero-project/src
     ${CMAKE_CURRENT_SOURCE_DIR}/external/monero-cpp/external/monero-project/contrib/epee/include
@@ -54,6 +55,7 @@ add_dependencies(monero-c monero-cpp-build)
 target_include_directories(monero-c
     PUBLIC 
         ${PROJECT_SOURCE_DIR}/src/utils
+        ${PROJECT_SOURCE_DIR}/src/daemon
 )
 
 target_link_libraries(monero-c
@@ -64,3 +66,14 @@ target_link_libraries(monero-c
 if(WIN32)
     target_compile_definitions(monero-c PRIVATE monero_c_EXPORTS)
 endif()
+
+enable_testing()
+
+find_package(PkgConfig REQUIRED)
+pkg_check_modules(CHECK REQUIRED check)
+
+add_executable(test_monero_utils test/test_monero_utils.c)
+target_include_directories(test_monero_utils PRIVATE ${CHECK_INCLUDE_DIRS})
+target_link_libraries(test_monero_utils PRIVATE monero-c ${CHECK_LIBRARIES})
+add_test(NAME test_monero_utils COMMAND test_monero_utils)
+

@@ -1,0 +1,4 @@
+
+const int MONERO_NETWORK_MAINNET = 0;
+const int MONERO_NETWORK_TESTNET = 1;
+const int MONERO_NETWORK_STAGENET = 2;
