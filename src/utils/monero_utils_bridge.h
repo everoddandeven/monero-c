@@ -20,6 +20,8 @@ extern ADDAPI void* monero_utils_get_integrated_address(int network_type, const 
 extern ADDAPI bool monero_utils_is_valid_address(const char* address, int network_type);
 extern ADDAPI bool monero_utils_is_valid_private_view_key(const char* private_view_key);
 extern ADDAPI bool monero_utils_is_valid_private_spend_key(const char* private_spend_key);
+extern ADDAPI bool monero_utils_is_valid_public_view_key(const char* public_view_key);
+extern ADDAPI bool monero_utils_is_valid_public_spend_key(const char* public_spend_key);
 extern ADDAPI bool monero_utils_is_valid_language(const char* language);
 
 extern ADDAPI const char* monero_utils_json_to_binary(const char* json);

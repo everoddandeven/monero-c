@@ -11,7 +11,7 @@
         std::cerr << "Exception caught in function: " << __FUNCTION__             \
                   << " at " << __FILE__ << ":" << __LINE__ << std::endl           \
                   << "Message: " << e.what() << std::endl;                        \
-        std::abort();                                                                    \
+        throw std::runtime_error(e.what());                                                                   \
     } catch (...) {                                                               \
         std::cerr << "Unknown exception caught in function: " << __FUNCTION__     \
                   << " at " << __FILE__ << ":" << __LINE__ << std::endl;          \

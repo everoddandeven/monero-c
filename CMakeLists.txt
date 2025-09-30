@@ -3,7 +3,7 @@ project(monero-c VERSION 1.0 LANGUAGES C CXX)
 
 include(ExternalProject)
 
-set(CMAKE_CXX_STANDARD 14)
+set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_POSITION_INDEPENDENT_CODE ON)
 
 include_directories(
@@ -72,8 +72,8 @@ enable_testing()
 find_package(PkgConfig REQUIRED)
 pkg_check_modules(CHECK REQUIRED check)
 
-add_executable(test_monero_utils test/test_monero_utils.c)
+add_executable(test_monero_utils test/test_monero_utils.cpp)
 target_include_directories(test_monero_utils PRIVATE ${CHECK_INCLUDE_DIRS})
-target_link_libraries(test_monero_utils PRIVATE monero-c ${CHECK_LIBRARIES})
+target_link_libraries(test_monero_utils PRIVATE monero-c monero-cpp ${CHECK_LIBRARIES})
 add_test(NAME test_monero_utils COMMAND test_monero_utils)
 
