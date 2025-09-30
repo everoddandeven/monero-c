@@ -7,9 +7,25 @@
 #include <cctype>
 #include <thread>
 #include "monero_daemon_bridge.h"
-#include "debug.hpp"
 #include "monero_utils_bridge.h"
-#include "../../external/monero-cpp/src/utils/monero_utils.h"
+#include "utils.hpp"
+
+thread_local std::string last_error = "";
+
+#define DEBUG_START()                                                             \
+    try {
+
+#define DEBUG_END()                                                               \
+    } catch (const std::exception &e) {                                           \
+        std::cerr << "Exception caught in function: " << __FUNCTION__             \
+                  << " at " << __FILE__ << ":" << __LINE__ << std::endl           \
+                  << "Message: " << e.what() << std::endl;                        \
+        last_error = e.what();                                                                   \
+    } catch (...) {                                                               \
+        std::cerr << "Unknown exception caught in function: " << __FUNCTION__     \
+                  << " at " << __FILE__ << ":" << __LINE__ << std::endl;          \
+        std::abort();                                                                    \
+    }
 
 #ifdef __cplusplus
 extern "C"
@@ -55,24 +71,6 @@ std::string from_hex(const std::string& hex, std::string_view prefix = "0b") {
     return out;
 }
 
-bool parse_network_type(int network_type, monero_network_type& net_type) {
-    if (network_type == MONERO_NETWORK_MAINNET)
-    {
-        net_type = monero_network_type::MAINNET;
-    }
-    else if (network_type == MONERO_NETWORK_TESTNET) {
-        net_type = monero_network_type::TESTNET;
-    }
-    else if (network_type == MONERO_NETWORK_STAGENET) {
-        net_type = monero_network_type::STAGENET;
-    }
-    else {
-        return false;
-    }
-
-    return true;
-}
-
 void monero_utils_set_log_level(int level) {
     DEBUG_START()
     monero_utils::set_log_level(level);
@@ -101,6 +99,7 @@ void* monero_utils_get_integrated_address(int network_type, const char* standard
     monero_integrated_address* ptr = new monero_integrated_address(integrated_address);
     return reinterpret_cast<void*>(ptr);
     DEBUG_END()
+    return nullptr;
 }
 
 bool monero_utils_is_valid_address(const char* address, int network_type) {
@@ -117,6 +116,7 @@ bool monero_utils_is_valid_address(const char* address, int network_type) {
 
     return monero_utils::is_valid_address(std::string(address), net_type);
     DEBUG_END()
+    return false;
 }
 
 bool monero_utils_is_valid_private_view_key(const char* private_view_key) {
@@ -127,6 +127,7 @@ bool monero_utils_is_valid_private_view_key(const char* private_view_key) {
 
     return monero_utils::is_valid_private_view_key(std::string(private_view_key));
     DEBUG_END()
+    return false;
 }
 
 bool monero_utils_is_valid_private_spend_key(const char* private_spend_key) {
@@ -137,6 +138,7 @@ bool monero_utils_is_valid_private_spend_key(const char* private_spend_key) {
 
     return monero_utils::is_valid_private_spend_key(std::string(private_spend_key));
     DEBUG_END()
+    return false;
 }
 
 bool monero_utils_is_valid_public_view_key(const char* public_view_key) {
@@ -147,6 +149,7 @@ bool monero_utils_is_valid_public_view_key(const char* public_view_key) {
 
     return monero_utils::is_valid_private_view_key(std::string(public_view_key));
     DEBUG_END()
+    return false;
 }
 
 bool monero_utils_is_valid_public_spend_key(const char* public_spend_key) {
@@ -157,6 +160,7 @@ bool monero_utils_is_valid_public_spend_key(const char* public_spend_key) {
 
     return monero_utils::is_valid_private_spend_key(std::string(public_spend_key));
     DEBUG_END()
+    return false;
 }
 
 bool monero_utils_is_valid_language(const char* language) {
@@ -167,6 +171,7 @@ bool monero_utils_is_valid_language(const char* language) {
 
     return monero_utils::is_valid_language(std::string(language));
     DEBUG_END()
+    return false;
 }
 
 const char* monero_utils_json_to_binary(const char* json) {
@@ -184,6 +189,7 @@ const char* monero_utils_json_to_binary(const char* json) {
     memcpy(buffer, bin.data(), size);
     return buffer;
     DEBUG_END()
+    return nullptr;
 }
 
 const char* monero_utils_binary_to_json(const char* bin) {
@@ -200,6 +206,7 @@ const char* monero_utils_binary_to_json(const char* bin) {
     memcpy(buffer, json.c_str(), size + 1);
     return buffer;
     DEBUG_END()
+    return nullptr;
 }
 
 const char* monero_utils_binary_blocks_to_json(const char* bin) {
@@ -216,6 +223,18 @@ const char* monero_utils_binary_blocks_to_json(const char* bin) {
     memcpy(buffer, json.c_str(), size + 1);
     return buffer;
     DEBUG_END()
+    return nullptr;
+}
+
+const char* monero_utils_get_error() {
+    if (last_error.empty()) {
+        return "";
+    }
+    const std::string::size_type size = last_error.size();
+    char *buffer = new char[size + 1];
+    memcpy(buffer, last_error.c_str(), size + 1);
+    last_error.clear();
+    return buffer;
 }
 
 #ifdef __cplusplus

@@ -28,6 +28,7 @@ extern ADDAPI const char* monero_utils_json_to_binary(const char* json);
 extern ADDAPI const char* monero_utils_binary_to_json(const char* bin);
 extern ADDAPI const char* monero_utils_binary_blocks_to_json(const char* bin);
 
+extern ADDAPI const char* monero_utils_get_error();
 
 #ifdef __cplusplus
 }

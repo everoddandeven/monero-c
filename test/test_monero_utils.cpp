@@ -341,14 +341,9 @@ START_TEST(test_get_integrated_address)
     ck_assert_int_eq(106, integrated_address->m_integrated_address.size());
 
     // get integrated address with invalid payment id
-
-    try {
-        monero_utils_get_integrated_address(network_type, primary_address, "123");
-        throw std::runtime_error("Getting integrated address with invalid payment id should have failed");
-    } catch (const std::exception &ex) {
-        ck_assert_str_eq("Invalid payment id", ex.what());
-    }
-
+    monero_utils_get_integrated_address(network_type, primary_address, "123");
+    const char *error = monero_utils_get_error();
+    ck_assert_str_eq("Invalid payment id", error);
 }
 END_TEST
 

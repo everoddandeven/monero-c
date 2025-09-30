@@ -7,6 +7,7 @@ set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_POSITION_INDEPENDENT_CODE ON)
 
 include_directories(
+    ${PROJECT_SOURCE_DIR}/src
     ${PROJECT_SOURCE_DIR}/src/utils
     ${PROJECT_SOURCE_DIR}/src/daemon
     ${CMAKE_CURRENT_SOURCE_DIR}/external/monero-cpp/src
@@ -45,6 +46,7 @@ set_target_properties(monero-cpp PROPERTIES
 )
 
 set(SOURCES
+    src/utils/utils.cpp
     src/utils/monero_utils_bridge.cpp
 )
 
