@@ -6,7 +6,7 @@
 
 extern "C" {
 #include <check.h>
-#include "../src/daemon/monero_daemon_bridge.h"
+#include "../src/utils/utils.hpp"
 #include "../src/utils/monero_utils_bridge.h"
 }
 

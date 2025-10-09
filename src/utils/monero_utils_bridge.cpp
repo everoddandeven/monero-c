@@ -6,7 +6,6 @@
 #include <stdexcept>
 #include <cctype>
 #include <thread>
-#include "monero_daemon_bridge.h"
 #include "monero_utils_bridge.h"
 #include "utils.hpp"
 
