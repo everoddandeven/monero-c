@@ -5,10 +5,10 @@
 #include <thread>
 #include "utils/utils.hpp"
 #include "monero_wallet_bridge.h"
-#include "../../external/monero-cpp/src/utils/monero_utils.h"
-#include "../../external/monero-cpp/src/wallet/monero_wallet.h"
-#include "../../external/monero-cpp/src/wallet/monero_wallet_full.h"
-#include "../../external/monero-cpp/src/wallet/monero_wallet_keys.h"
+#include "utils/monero_utils.h"
+#include "wallet/monero_wallet.h"
+#include "wallet/monero_wallet_full.h"
+#include "wallet/monero_wallet_keys.h"
 
 #ifdef __cplusplus
 extern "C"
@@ -55,20 +55,6 @@ void monero_wallet_set_daemon_connection(void* wallet, const char* uri, const ch
         w->set_daemon_connection(std::string(uri != nullptr ? uri : ""));
     } else {
         w->set_daemon_connection(std::string(uri != nullptr ? uri : ""), std::string(username), std::string(password));
-    }
-    DEBUG_END()
-}
-
-void monero_wallet_set_daemon_proxy(void* wallet, const char* uri) {
-    DEBUG_START()
-    if (wallet == nullptr) {
-        return;
-    }
-    monero::monero_wallet* w = reinterpret_cast<monero::monero_wallet*>(wallet);
-    if (uri == nullptr) {
-        w->set_daemon_proxy();
-    } else {
-        w->set_daemon_proxy(std::string(uri));
     }
     DEBUG_END()
 }
@@ -1545,7 +1531,7 @@ uint64_t monero_wallet_add_address_book_entry(void* wallet, const char* address,
     DEBUG_START()
     if (wallet == nullptr) {
         last_error = "Wallet is null";
-        return;
+        return 0;
     }
     monero::monero_wallet* w = reinterpret_cast<monero::monero_wallet*>(wallet);
     std::string _address = address != nullptr ? std::string(address) : std::string("");
@@ -1583,7 +1569,7 @@ const char* monero_wallet_get_payment_uri(void* wallet, const char* config) {
     DEBUG_START()
     if (wallet == nullptr) {
         last_error = "Wallet is null";
-        return;
+        return nullptr;
     }
     monero::monero_wallet* w = reinterpret_cast<monero::monero_wallet*>(wallet);
     std::shared_ptr<monero_tx_config> tx_config = monero_tx_config::deserialize(config);
@@ -1762,7 +1748,6 @@ const char* monero_wallet_make_multisig(void* wallet, const char* multisig_hexes
         return nullptr;
     }
 
-    monero::monero_wallet* w = reinterpret_cast<monero::monero_wallet*>(wallet);
     std::string _multisig_hexes(multisig_hexes);
     monero::monero_wallet* w = reinterpret_cast<monero::monero_wallet*>(wallet);
     std::istringstream iss = _multisig_hexes.empty() ? std::istringstream() : std::istringstream(_multisig_hexes);
@@ -1799,7 +1784,6 @@ const char* monero_wallet_exchange_multisig_keys(void* wallet, const char* multi
         return nullptr;
     }
 
-    monero::monero_wallet* w = reinterpret_cast<monero::monero_wallet*>(wallet);
     std::string _multisig_hexes(multisig_hexes);
     monero::monero_wallet* w = reinterpret_cast<monero::monero_wallet*>(wallet);
     std::istringstream iss = _multisig_hexes.empty() ? std::istringstream() : std::istringstream(_multisig_hexes);
@@ -1836,7 +1820,6 @@ int monero_wallet_import_multisig_hex(void* wallet, const char* multisig_hexes) 
         return -1;
     }
 
-    monero::monero_wallet* w = reinterpret_cast<monero::monero_wallet*>(wallet);
     std::string _multisig_hexes(multisig_hexes);
     monero::monero_wallet* w = reinterpret_cast<monero::monero_wallet*>(wallet);
     std::istringstream iss = _multisig_hexes.empty() ? std::istringstream() : std::istringstream(_multisig_hexes);
