@@ -2,14 +2,13 @@
 #include <unistd.h>
 #include <cstring>
 #include <string>
-#include <string_view>
 #include <stdexcept>
 #include <cctype>
 #include <thread>
 #include "monero_utils_bridge.h"
 #include "utils.hpp"
 
-thread_local std::string last_error = "";
+thread_local std::string api_error = "";
 
 #define DEBUG_START()                                                             \
     try {
@@ -19,7 +18,7 @@ thread_local std::string last_error = "";
         std::cerr << "Exception caught in function: " << __FUNCTION__             \
                   << " at " << __FILE__ << ":" << __LINE__ << std::endl           \
                   << "Message: " << e.what() << std::endl;                        \
-        last_error = e.what();                                                                   \
+        api_error = e.what();                                                                   \
     } catch (...) {                                                               \
         std::cerr << "Unknown exception caught in function: " << __FUNCTION__     \
                   << " at " << __FILE__ << ":" << __LINE__ << std::endl;          \
@@ -31,7 +30,7 @@ extern "C"
 {
 #endif
 
-std::string to_hex(std::string_view bytes, std::string_view prefix = "0b") {
+std::string to_hex(std::string bytes, std::string prefix = "0b") {
     static constexpr char hex[] = "0123456789abcdef";
     std::string out;
     out.reserve(prefix.size() + bytes.size() * 2);
@@ -50,7 +49,7 @@ unsigned char from_hex_character(char c) {
     throw std::invalid_argument("Invalid hex character");
 }
 
-std::string from_hex(const std::string& hex, std::string_view prefix = "0b") {
+std::string from_hex(const std::string& hex, std::string prefix = "0b") {
     size_t start = 0;
     if (hex.rfind(prefix, 0) == 0) {
         start = prefix.size();
@@ -226,13 +225,13 @@ const char* monero_utils_binary_blocks_to_json(const char* bin) {
 }
 
 const char* monero_utils_get_error() {
-    if (last_error.empty()) {
+    if (api_error.empty()) {
         return "";
     }
-    const std::string::size_type size = last_error.size();
+    const std::string::size_type size = api_error.size();
     char *buffer = new char[size + 1];
-    memcpy(buffer, last_error.c_str(), size + 1);
-    last_error.clear();
+    memcpy(buffer, api_error.c_str(), size + 1);
+    api_error.clear();
     return buffer;
 }
 

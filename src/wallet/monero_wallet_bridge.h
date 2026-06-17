@@ -18,7 +18,6 @@ extern "C"
 
 extern ADDAPI bool monero_wallet_is_view_only(void* wallet);
 extern ADDAPI void monero_wallet_set_daemon_connection(void* wallet, const char* uri, const char* username, const char* password);
-extern ADDAPI void monero_wallet_set_daemon_proxy(void* wallet, const char* uri);
 extern ADDAPI const char* monero_wallet_get_daemon_connection(void* wallet);
 extern ADDAPI bool monero_wallet_is_connected_to_daemon(void* wallet);
 extern ADDAPI bool monero_wallet_is_daemon_synced(void* wallet);

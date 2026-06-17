@@ -1,4 +1,4 @@
-#include "../../external/monero-cpp/src/utils/monero_utils.h"
+#include "utils/monero_utils.h"
 
 // network type
 const int MONERO_NETWORK_MAINNET = 0;
