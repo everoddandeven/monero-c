@@ -18,7 +18,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        os: [ ubuntu-26.04, ubuntu-24.04, ubuntu-22.04, ubuntu-26.04-arm, ubuntu-24.04-arm, ubuntu-22.04-arm ]
+        os: [ ubuntu-24.04, ubuntu-24.04-arm ]
 
     steps:
       - name: Checkout repository
@@ -70,7 +70,6 @@ jobs:
           cmake ..
           cmake --build .
           make -j3
-          cp libmonero-cpp.so ../../../build
           cd ../../../
 
       - name: Upload monero-cpp shared library
@@ -83,13 +82,106 @@ jobs:
         run: |
           cd build
           cmake ..
-          cmake --build . -- -j1
+          cmake --build . -- -j3
 
       - name: Upload monero-c shared library
         uses: actions/upload-artifact@v7
         with:
           name: libmonero-c-${{ matrix.os }}
           path: build/libmonero-c.so
+
+  windows:
+    runs-on: windows-latest
+
+    defaults:
+      run:
+        shell: msys2 {0}
+
+    steps:
+      - name: Initialize
+        uses: actions/checkout@v5
+        with:
+          submodules: recursive
+
+      - name: Setup MSYS2 MINGW64
+        uses: msys2/setup-msys2@e9898307ac31d1a803454791be09ab9973336e1c
+        with:
+          msystem: MINGW64
+          update: true
+          install: >-
+            mingw-w64-x86_64-toolchain
+            mingw-w64-x86_64-cmake
+            mingw-w64-x86_64-openssl
+            mingw-w64-x86_64-zeromq
+            mingw-w64-x86_64-libsodium
+            mingw-w64-x86_64-hidapi
+            mingw-w64-x86_64-unbound
+            mingw-w64-x86_64-protobuf
+            mingw-w64-x86_64-libusb
+            mingw-w64-x86_64-libevent
+            mingw-w64-x86_64-gcc
+            mingw-w64-x86_64-make
+            mingw-w64-x86_64-ntldd
+            git
+            base-devel
+            wget
+
+      - name: Install boost v1.87.0
+        run: |
+          wget https://repo.msys2.org/mingw/mingw64/mingw-w64-x86_64-boost-1.87.0-3-any.pkg.tar.zst
+          pacman -U --noconfirm mingw-w64-x86_64-boost-1.87.0-3-any.pkg.tar.zst
+
+      - name: Build monero-project
+        run: |
+          cd external/monero-cpp/external/monero-project
+          mkdir -p build/release
+          cd build/release
+          cmake -G "MSYS Makefiles" \
+            -D STATIC=ON \
+            -D ARCH="x86-64" \
+            -D BUILD_64=ON \
+            -D CMAKE_BUILD_TYPE=Release \
+            -D BUILD_TAG="win-x64" \
+            -D CMAKE_TOOLCHAIN_FILE="../../cmake/64-bit-toolchain.cmake" \
+            -D MSYS2_FOLDER=$(cd $MINGW_PREFIX/.. && pwd -W) \
+            ../../
+          make wallet cryptonote_protocol -j3
+          cd ../../../../../../
+
+      - name: Build monero-cpp
+        run: |
+          cd external/monero-cpp
+          mkdir -p build
+          cd build
+          cmake ..
+          cmake --build . -j3
+          make .
+          cd ../../../
+
+      - name: Upload monero-cpp shared library
+        uses: actions/upload-artifact@v7
+        with:
+          name: libmonero-cpp-win-x64
+          path: |
+            external/monero-cpp/build/libmonero-cpp.dll
+            external/monero-cpp/build/libmonero-cpp.dll.a
+
+      - name: Build monero-c
+        run: |
+          mkdir -p build
+          cd build
+          cmake ..
+          cmake --build . -j3
+          make .
+          cd ../
+
+      - name: Upload monero-c dll
+        uses: actions/upload-artifact@v7
+        with:
+          name: libmonero-c-win-x64
+          path: |
+            build/libmonero-c.dll
+            build/libmonero-c.dll.a
 
   macos:
     name: ${{ matrix.os }}
@@ -98,7 +190,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        os: [ macos-26, macos-26-intel, macos-15, macos-15-intel, macos-14 ]
+        os: [ macos-15, macos-15-intel ]
 
     steps:
       - name: Checkout repository
@@ -128,20 +220,19 @@ jobs:
           cmake ..
           cmake --build .
           make -j3
-          cp libmonero-cpp.dylib ../../../build
           cd ../../../
 
       - name: Upload monero-cpp shared library
         uses: actions/upload-artifact@v7
         with:
           name: libmonero-cpp-${{ matrix.os }}
-          path: build/libmonero-cpp.dylib
+          path: external/monero-cpp/build/libmonero-cpp.dylib
 
       - name: Build monero-c shared library
         run: |
           cd build
           cmake ..
-          cmake --build . -- -j1
+          cmake --build . -- -j3
 
       - name: Upload monero-c shared library
         uses: actions/upload-artifact@v7

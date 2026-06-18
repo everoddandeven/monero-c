@@ -7,13 +7,10 @@ HOST_NCORES=$(nproc 2>/dev/null || shell nproc 2>/dev/null || sysctl -n hw.ncpu 
 # build libmonero-cpp shared library
 cd ./external/monero-cpp/ && 
 ./bin/build_libmonero_cpp.sh &&
-
-# copy libmonero-cpp shared library to ./build
 cd ../../ &&
-mkdir -p ./build &&
-cp ./external/monero-cpp/build/libmonero-cpp.* ./build &&
 
 # build libmonero-c shared library to ./build
+mkdir -p build &&
 cd build && 
 cmake .. && 
 cmake --build . -j$HOST_NCORES && 

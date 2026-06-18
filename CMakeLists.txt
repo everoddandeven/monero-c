@@ -96,18 +96,23 @@ endif()
 ###################
 
 set(MONERO_CPP "${CMAKE_SOURCE_DIR}/external/monero-cpp")
+set(MONERO_CPP_BUILD "${MONERO_CPP}/build" CACHE STRING "Monero C++ build directory")
 set(MONERO_PROJECT ${MONERO_CPP}/external/monero-project)
+message(STATUS "Using monero-cpp build: " ${MONERO_CPP_BUILD})
 
 add_library(monero-cpp SHARED IMPORTED)
 
-# import shared c++ library
 if (APPLE)
-  set_target_properties(monero-cpp PROPERTIES IMPORTED_LOCATION ./libmonero-cpp.dylib)
+  set_target_properties(monero-cpp PROPERTIES IMPORTED_LOCATION
+      ${MONERO_CPP_BUILD}/libmonero-cpp.dylib)
 elseif (WIN32)
-  set_target_properties(monero-cpp PROPERTIES IMPORTED_LOCATION ./libmonero-cpp.dll)
-  set_target_properties(monero-cpp PROPERTIES IMPORTED_IMPLIB ./libmonero-cpp.dll.a)
+  set_target_properties(monero-cpp PROPERTIES IMPORTED_LOCATION
+      ${MONERO_CPP_BUILD}/libmonero-cpp.dll)
+  set_target_properties(monero-cpp PROPERTIES IMPORTED_IMPLIB
+      ${MONERO_CPP_BUILD}/libmonero-cpp.dll.a)
 else()
-  set_target_properties(monero-cpp PROPERTIES IMPORTED_LOCATION ./libmonero-cpp.so)
+  set_target_properties(monero-cpp PROPERTIES IMPORTED_LOCATION
+      ${MONERO_CPP_BUILD}/libmonero-cpp.so)
 endif()
 
 ###############################################
@@ -116,9 +121,7 @@ endif()
 
 set(
     MONERO_C_FILES
-    src/utils/utils.cpp
-    src/utils/monero_utils_bridge.cpp
-    src/wallet/monero_wallet_bridge.cpp
+    src/monero_api_c.cpp
 )
 add_library(monero-c SHARED ${MONERO_C_FILES})
 
@@ -150,6 +153,8 @@ if (CMAKE_SYSTEM_NAME STREQUAL "Linux")
     target_link_options(monero-c PRIVATE "-z" "noexecstack")
 endif()
 
+INSTALL(FILES src/monero_api_c.h
+        DESTINATION include)
 INSTALL(TARGETS monero-c
   RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR} COMPONENT Runtime
   LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR} COMPONENT Runtime
