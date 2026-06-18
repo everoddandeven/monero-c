@@ -1,3 +1,61 @@
+/**
+ * Copyright (c) everoddandeven
+ *
+ * Permission is hereby granted, free of charge, to any person obtaining a copy
+ * of this software and associated documentation files (the "Software"), to deal
+ * in the Software without restriction, including without limitation the rights
+ * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+ * copies of the Software, and to permit persons to whom the Software is
+ * furnished to do so, subject to the following conditions:
+ *
+ * The above copyright notice and this permission notice shall be included in all
+ * copies or substantial portions of the Software.
+ *
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+ * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+ * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+ * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+ * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+ * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+ * SOFTWARE.
+ *
+ * Parts of this file are originally copyright (c) woodser
+ *
+ * Parts of this file are originally copyright (c) 2014-2019, The Monero Project
+ *
+ * Redistribution and use in source and binary forms, with or without modification, are
+ * permitted provided that the following conditions are met:
+ *
+ * All rights reserved.
+ *
+ * 1. Redistributions of source code must retain the above copyright notice, this list of
+ *    conditions and the following disclaimer.
+ *
+ * 2. Redistributions in binary form must reproduce the above copyright notice, this list
+ *    of conditions and the following disclaimer in the documentation and/or other
+ *    materials provided with the distribution.
+ *
+ * 3. Neither the name of the copyright holder nor the names of its contributors may be
+ *    used to endorse or promote products derived from this software without specific
+ *    prior written permission.
+ *
+ * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND ANY
+ * EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF
+ * MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL
+ * THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
+ * SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO,
+ * PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
+ * INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT,
+ * STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF
+ * THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+ *
+ * Parts of this file are originally copyright (c) 2012-2013 The Cryptonote developers
+ */
+#pragma once
+
+#ifndef monero_api_c_h
+#define monero_api_c_h
+
 #include <stdint.h>
 #include <stdbool.h>
 #include <stddef.h>
@@ -13,6 +71,36 @@ extern "C"
 #else
     #define ADDAPI __attribute__((__visibility__("default")))
 #endif
+
+// monero_network_type
+
+const int MONERO_NETWORK_MAINNET = 0;
+const int MONERO_NETWORK_TESTNET = 1;
+const int MONERO_NETWORK_STAGENET = 2;
+
+// monero_message_signature_type
+
+const int MONERO_MESSAGE_SIGN_WITH_SPEND_KEY = 0;
+const int MONERO_MESSAGE_SIGN_WITH_VIEW_KEY = 1;
+
+// api error
+
+extern ADDAPI const char* monero_api_error();
+
+// monero_utils
+
+extern ADDAPI void monero_utils_set_log_level(int level);
+extern ADDAPI void monero_utils_configure_logging(const char* path, bool console);
+extern ADDAPI void* monero_utils_get_integrated_address(int network_type, const char* standard_address, const char* payment_id);
+extern ADDAPI bool monero_utils_is_valid_address(const char* address, int network_type);
+extern ADDAPI bool monero_utils_is_valid_private_view_key(const char* private_view_key);
+extern ADDAPI bool monero_utils_is_valid_private_spend_key(const char* private_spend_key);
+extern ADDAPI bool monero_utils_is_valid_public_view_key(const char* public_view_key);
+extern ADDAPI bool monero_utils_is_valid_public_spend_key(const char* public_spend_key);
+extern ADDAPI bool monero_utils_is_valid_language(const char* language);
+extern ADDAPI const char* monero_utils_json_to_binary(const char* json);
+extern ADDAPI const char* monero_utils_binary_to_json(const char* bin);
+extern ADDAPI const char* monero_utils_binary_blocks_to_json(const char* bin);
 
 // monero_wallet
 
@@ -127,18 +215,22 @@ extern ADDAPI void monero_wallet_move_to(void* wallet, const char* path, const c
 extern ADDAPI void monero_wallet_save(void* wallet);
 extern ADDAPI void monero_wallet_close(void* wallet, bool save);
 
+// monero_wallet_full
+
 extern ADDAPI bool monero_wallet_full_wallet_exists(const char* path);
 extern ADDAPI void* monero_wallet_full_open_wallet(const char* path, const char* password, int network_type);
 extern ADDAPI void* monero_wallet_full_create_wallet(const char* config);
 extern ADDAPI const char* monero_wallet_full_get_seed_languages();
+
+// monero_wallet_keys
 
 extern ADDAPI void* monero_wallet_keys_create_wallet_random(const char* config);
 extern ADDAPI void* monero_wallet_keys_create_wallet_from_seed(const char* config);
 extern ADDAPI void* monero_wallet_keys_create_wallet_from_keys(const char* config);
 extern ADDAPI const char* monero_wallet_keys_get_seed_languages();
 
-extern ADDAPI const char* monero_wallet_get_error();
-
 #ifdef __cplusplus
 }
 #endif
+
+#endif // monero_api_c_h
