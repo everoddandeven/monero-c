@@ -14,33 +14,26 @@ extern "C"
 {
 #endif
 
-static thread_local std::string last_error = "";
+// ----------------------- DEBUG UTILS -----------------------
+
+static thread_local std::string last_error = ""; // thread-local variable to store the last error message
 
 #define DEBUG_START()                                                             \
   try {
 
 #define DEBUG_END()                                                               \
-  } catch (const std::exception &e) {                                           \
-    std::cerr << "Exception caught in function: " << __FUNCTION__             \
-          << " at " << __FILE__ << ":" << __LINE__ << std::endl           \
-          << "Message: " << e.what() << std::endl;                        \
-    last_error = e.what();                                                                   \
-  } catch (...) {                                                               \
-    std::cerr << "Unknown exception caught in function: " << __FUNCTION__     \
-          << " at " << __FILE__ << ":" << __LINE__ << std::endl;          \
-    std::abort();                                                                    \
+  } catch (const std::exception &e) {                                             \
+    std::cerr << "Exception caught in function: " << __FUNCTION__                 \
+          << " at " << __FILE__ << ":" << __LINE__ << std::endl                   \
+          << "Message: " << e.what() << std::endl;                                \
+    last_error = e.what();                                                        \
+  } catch (...) {                                                                 \
+    std::cerr << "Unknown exception caught in function: " << __FUNCTION__         \
+          << " at " << __FILE__ << ":" << __LINE__ << std::endl;                  \
+    std::abort();                                                                 \
   }
 
-const char* monero_api_error() {
-  if (last_error.empty()) {
-    return "";
-  }
-  const std::string::size_type size = last_error.size();
-  char *buffer = new char[size + 1];
-  memcpy(buffer, last_error.c_str(), size + 1);
-  last_error.clear();
-  return buffer;
-}
+// ----------------------- INTERNAL PRIVATE HELPERS -----------------------
 
 bool parse_network_type(int network_type, monero_network_type& net_type) {
   if (network_type == MONERO_NETWORK_MAINNET) net_type = monero_network_type::MAINNET;
@@ -64,9 +57,9 @@ std::string to_hex(std::string bytes, std::string prefix = "0b") {
   std::string out;
   out.reserve(prefix.size() + bytes.size() * 2);
   out.append(prefix);
-  for (unsigned char b : bytes) {                 // cast importante!
-    out.push_back(hex[b >> 4]);                 // nibble alto
-    out.push_back(hex[b & 0x0F]);               // nibble basso
+  for (unsigned char b : bytes) {
+    out.push_back(hex[b >> 4]);
+    out.push_back(hex[b & 0x0F]);
   }
   return out;
 }
@@ -93,6 +86,21 @@ std::string from_hex(const std::string& hex, std::string prefix = "0b") {
   }
   return out;
 }
+
+// ----------------------- MONERO API ERROR -----------------------
+
+const char* monero_api_error() {
+  if (last_error.empty()) {
+    return "";
+  }
+  const std::string::size_type size = last_error.size();
+  char *buffer = new char[size + 1];
+  memcpy(buffer, last_error.c_str(), size + 1);
+  last_error.clear();
+  return buffer;
+}
+
+// ----------------------- MONERO UTILS -----------------------
 
 void monero_utils_set_log_level(int level) {
   DEBUG_START()
@@ -192,57 +200,7 @@ bool monero_utils_is_valid_language(const char* language) {
   return false;
 }
 
-const char* monero_utils_json_to_binary(const char* json) {
-  DEBUG_START()
-  if (json == nullptr) {
-    return nullptr;
-  }
-
-  std::string bin;
-  std::string json_str = std::string(json);
-  monero_utils::json_to_binary(json_str, bin);
-  bin = to_hex(bin);
-  const std::string::size_type size = bin.length();
-  char *buffer = new char[size];
-  memcpy(buffer, bin.data(), size);
-  return buffer;
-  DEBUG_END()
-  return nullptr;
-}
-
-const char* monero_utils_binary_to_json(const char* bin) {
-  DEBUG_START()
-  if (bin == nullptr) {
-    return nullptr;
-  }
-
-  std::string json;
-  std::string bin_str = from_hex(std::string(bin));
-  monero_utils::binary_to_json(bin_str, json);
-  const std::string::size_type size = json.size();
-  char *buffer = new char[size + 1];
-  memcpy(buffer, json.c_str(), size + 1);
-  return buffer;
-  DEBUG_END()
-  return nullptr;
-}
-
-const char* monero_utils_binary_blocks_to_json(const char* bin) {
-  DEBUG_START()
-  if (bin == nullptr) {
-    return nullptr;
-  }
-
-  std::string json;
-  std::string bin_str = from_hex(std::string(bin));
-  monero_utils::binary_blocks_to_json(bin_str, json);
-  const std::string::size_type size = json.size();
-  char *buffer = new char[size + 1];
-  memcpy(buffer, json.c_str(), size + 1);
-  return buffer;
-  DEBUG_END()
-  return nullptr;
-}
+// ----------------------- MONERO WALLET -----------------------
 
 bool monero_wallet_is_view_only(void* wallet) {
   DEBUG_START()
@@ -1882,15 +1840,16 @@ void monero_wallet_stop_mining(void* wallet) {
   DEBUG_END()
 }
 
-void monero_wallet_wait_for_next_block(void* wallet) {
+uint64_t monero_wallet_wait_for_next_block(void* wallet) {
   DEBUG_START()
   if (wallet == nullptr) {
     last_error = "Wallet is null";
-    return;
+    return 0;
   }
   monero::monero_wallet* w = reinterpret_cast<monero::monero_wallet*>(wallet);
-  w->wait_for_next_block();
+  return w->wait_for_next_block();
   DEBUG_END()
+  return 0;
 }
 
 bool monero_wallet_is_multisig_import_needed(void* wallet) {
@@ -2159,6 +2118,20 @@ void monero_wallet_close(void* wallet, bool save) {
   DEBUG_END()
 }
 
+bool monero_wallet_is_closed(void* wallet) {
+  DEBUG_START()
+  if (wallet == nullptr) {
+    last_error = "Wallet is null";
+    return false;
+  }
+  monero::monero_wallet* w = reinterpret_cast<monero::monero_wallet*>(wallet);
+  return w->is_closed();
+  DEBUG_END()
+  return false;
+}
+
+// ----------------------- MONERO WALLET FULL -----------------------
+
 bool monero_wallet_full_wallet_exists(const char* path) {
   DEBUG_START()
   if (path == nullptr) {
@@ -2218,6 +2191,8 @@ const char* monero_wallet_full_get_seed_languages() {
   DEBUG_END()
   return "";
 }
+
+// ----------------------- MONERO WALLET KEYS -----------------------
 
 void* monero_wallet_keys_create_wallet_from_keys(const char* config) {
   DEBUG_START()
