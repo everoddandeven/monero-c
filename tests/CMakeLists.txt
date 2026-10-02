@@ -1,0 +1,4 @@
+add_executable(monero_c_utils_tests monero_c_utils_tests.c)
+target_link_libraries(monero_c_utils_tests PRIVATE monero_c)
+
+add_test(NAME monero_c_utils_tests COMMAND monero_c_utils_tests)

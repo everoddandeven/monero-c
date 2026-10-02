@@ -1,0 +1,413 @@
+/**
+ * Copyright (c) Libmonero
+ *
+ * Permission is hereby granted, free of charge, to any person obtaining a copy
+ * of this software and associated documentation files (the "Software"), to deal
+ * in the Software without restriction, including without limitation the rights
+ * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+ * copies of the Software, and to permit persons to whom the Software is
+ * furnished to do so, subject to the following conditions:
+ *
+ * The above copyright notice and this permission notice shall be included in all
+ * copies or substantial portions of the Software.
+ *
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+ * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+ * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+ * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+ * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+ * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+ * SOFTWARE.
+ */
+
+#include "monero_c.h"
+
+#include <math.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+
+static int g_checks = 0;
+static int g_failures = 0;
+
+#define CHECK(cond) do { \
+  g_checks++; \
+  if (!(cond)) { \
+    g_failures++; \
+    fprintf(stderr, "FAIL %s:%d: %s\n", __FILE__, __LINE__, #cond); \
+  } \
+} while (0)
+
+#define EXPECT_OK(expr) do { \
+  monero_result _r = (expr); \
+  g_checks++; \
+  if (_r != MONERO_OK) { \
+    g_failures++; \
+    fprintf(stderr, "FAIL %s:%d: expected OK, got error: %s\n", __FILE__, __LINE__, monero_utils_last_error()); \
+  } \
+} while (0)
+
+#define EXPECT_ERR(expr) do { \
+  monero_result _r = (expr); \
+  g_checks++; \
+  if (_r != MONERO_ERROR) { \
+    g_failures++; \
+    fprintf(stderr, "FAIL %s:%d: expected ERROR, call unexpectedly succeeded\n", __FILE__, __LINE__); \
+  } \
+} while (0)
+
+#define EXPECT_ERR_MSG(expr, expected_msg) do { \
+  monero_result _r = (expr); \
+  g_checks++; \
+  if (_r != MONERO_ERROR) { \
+    g_failures++; \
+    fprintf(stderr, "FAIL %s:%d: expected ERROR, call unexpectedly succeeded\n", __FILE__, __LINE__); \
+  } else if (strcmp(monero_utils_last_error(), (expected_msg)) != 0) { \
+    g_failures++; \
+    fprintf(stderr, "FAIL %s:%d: expected error \"%s\", got \"%s\"\n", __FILE__, __LINE__, (expected_msg), monero_utils_last_error()); \
+  } \
+} while (0)
+
+// Finds "key":"value" in a compact JSON string and copies value into out.
+// Good enough for asserting on this test's own known-shape output; not a general JSON parser.
+static int extract_json_string(const char* json, const char* key, char* out, size_t out_cap) {
+  char needle[128];
+  snprintf(needle, sizeof(needle), "\"%s\"", key);
+  const char* p = strstr(json, needle);
+  if (!p) return 0;
+  p = strchr(p + strlen(needle), ':');
+  if (!p) return 0;
+  p = strchr(p, '"');
+  if (!p) return 0;
+  p++;
+  const char* end = strchr(p, '"');
+  if (!end) return 0;
+  size_t len = (size_t) (end - p);
+  if (len >= out_cap) return 0;
+  memcpy(out, p, len);
+  out[len] = '\0';
+  return 1;
+}
+
+// ------------------------------- TEST DATA ----------------------------------
+// Reused from monero-python's tests/config/test_monero_utils.ini (public, funds-free).
+
+static const char* MAINNET_PRIMARY_1 = "42U9v3qs5CjZEePHBZHwuSckQXebuZu299NSmVEmQ41YJZQhKcPyujyMSzpDH4VMMVSBo3U3b54JaNvQLwAjqDhKS3rvM3L";
+static const char* MAINNET_PRIMARY_2 = "48ZxX3Y2y5s4nJ8fdz2w65TrTEp9PRsv5J8iHSShkHQcE2V31FhnWptioNst1K9oeDY4KpWZ7v8V2BZNVa4Wdky89iqmPz2";
+static const char* MAINNET_SUBADDR_1 = "891TQPrWshJVpnBR4ZMhHiHpLx1PUnMqa3ccV5TJFBbqcJa3DWhjBh2QByCv3Su7WDPTGMHmCKkiVFN2fyGJKwbM1t6G7Ea";
+static const char* MAINNET_INTEGRATED_1 = "4CApvrfMgUFZEePHBZHwuSckQXebuZu299NSmVEmQ41YJZQhKcPyujyMSzpDH4VMMVSBo3U3b54JaNvQLwAjqDhKeGLQ9vfRBRKFKnBtVH";
+static const char* MAINNET_INVALID_1 = "42ZxX3Y2y5s4nJ8fdz2w65TrTEp9PRsv5J8iHSShkHQcE2V31FhnWptioNst1K9oeDY4KpWZ7v8V2BZNVa4Wdky89iqmPz2";
+
+static const char* TESTNET_PRIMARY_1 = "9tUBnNCkC3UKGygHCwYvAB1FscpjUuq5e9MYJd2rXuiiTjjfVeSVjnbSG5VTnJgBgy9Y7GTLfxpZNMUwNZjGfdFr1z79eV1";
+static const char* TESTNET_INVALID_1 = "91UBnNCkC3UKGygHCwYvAB1FscpjUuq5e9MYJd2rXuiiTjjfVeSVjnbSG5VTnJgBgy9Y7GTLfxpZNMUwNZjGfdFr1z79eV1";
+
+static const char* STAGENET_PRIMARY_4 = "58qRVVjZ4KxMX57TH6yWqGcH5AswvZZS494hWHcHPt6cDkP7V8AqxFhi3RKXZueVRgUnk8niQGHSpY5Bm9DjuWn16GDKXpF";
+static const char* STAGENET_SUBADDR_4 = "7B9w2xieXjhDumgPX39h1CAYELpsZ7Pe8Wqtr3pVL9jJ5gGDqgxjWt55gTYUCAuhahhM85ajEp6VbQfLDPETt4oT2ZRXa6n";
+static const char* STAGENET_INVALID_1 = "518s3obCY2ETeQB3GNAGPK2zRGen5UeW1WzegSizVsmf6z5NvM2GLoN6zzk1vHyzGAAfA8pGhuYAeCFZjHAp59jRVQkunGS";
+
+static const char* PRIVATE_VIEW_KEY = "86cf351d10894769feba29b9e201e12fb100b85bb52fc5825c864eef55c5840d";
+static const char* PUBLIC_VIEW_KEY = "99873d76ca874ff1aad676b835dd303abcb21c9911ca8a3d9130abc4544d8a0a";
+static const char* PRIVATE_SPEND_KEY = "e9ba887e93620ef9fafdfe0c6d3022949f1c5713cbd9ef631f18a0fb00421dee";
+static const char* PUBLIC_SPEND_KEY = "3e48df9e9d8038dbf6f5382fac2becd8686273cda5bd87187e45dca7ec5af37b";
+static const char* INVALID_PRIVATE_VIEW_KEY = "5B8s3obCY2ETeQB3GNAGPK2zRGen5UeW1WzegSizVsmf6z5NvM2GLoN6zzk1vHyzGAAfA8pGhuYAeCFZjHAp59jRVQkunGS";
+
+static const char* SEED = "vortex degrees outbreak teeming gimmick school rounded tonic observant injury leech ought problems ahead upcoming ledge textbook cigar atrium trash dunes eavesdrop dullness evolved vortex";
+
+// ------------------------------- VALIDATION ---------------------------------
+
+static void test_address_validation(void) {
+  CHECK(monero_utils_is_valid_address(MAINNET_PRIMARY_1, MONERO_UTILS_NETWORK_MAINNET));
+  CHECK(monero_utils_is_valid_address(MAINNET_SUBADDR_1, MONERO_UTILS_NETWORK_MAINNET));
+  CHECK(monero_utils_is_valid_address(MAINNET_INTEGRATED_1, MONERO_UTILS_NETWORK_MAINNET));
+  EXPECT_OK(monero_utils_validate_address(MAINNET_PRIMARY_1, MONERO_UTILS_NETWORK_MAINNET));
+
+  CHECK(monero_utils_is_valid_address(TESTNET_PRIMARY_1, MONERO_UTILS_NETWORK_TESTNET));
+  CHECK(!monero_utils_is_valid_address(TESTNET_PRIMARY_1, MONERO_UTILS_NETWORK_MAINNET)); // wrong network
+
+  CHECK(!monero_utils_is_valid_address(NULL, MONERO_UTILS_NETWORK_MAINNET));
+  CHECK(!monero_utils_is_valid_address("", MONERO_UTILS_NETWORK_MAINNET));
+  CHECK(!monero_utils_is_valid_address(MAINNET_INVALID_1, MONERO_UTILS_NETWORK_MAINNET));
+  CHECK(!monero_utils_is_valid_address(TESTNET_INVALID_1, MONERO_UTILS_NETWORK_TESTNET));
+  CHECK(!monero_utils_is_valid_address(STAGENET_INVALID_1, MONERO_UTILS_NETWORK_STAGENET));
+  EXPECT_ERR(monero_utils_validate_address(MAINNET_INVALID_1, MONERO_UTILS_NETWORK_MAINNET));
+  EXPECT_ERR(monero_utils_validate_address(MAINNET_PRIMARY_1, (int32_t) 99)); // invalid network_type
+}
+
+static void test_key_validation(void) {
+  const char* invalid_hex_64 = "zzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzz"; // right length, not hex
+
+  CHECK(monero_utils_is_valid_private_view_key(PRIVATE_VIEW_KEY));
+  EXPECT_OK(monero_utils_validate_private_view_key(PRIVATE_VIEW_KEY));
+  CHECK(!monero_utils_is_valid_private_view_key(""));
+  CHECK(!monero_utils_is_valid_private_view_key(NULL));
+  CHECK(!monero_utils_is_valid_private_view_key(INVALID_PRIVATE_VIEW_KEY));
+  CHECK(!monero_utils_is_valid_private_view_key(invalid_hex_64));
+
+  CHECK(monero_utils_is_valid_public_view_key(PUBLIC_VIEW_KEY));
+  EXPECT_OK(monero_utils_validate_public_view_key(PUBLIC_VIEW_KEY));
+  CHECK(!monero_utils_is_valid_public_view_key(""));
+
+  CHECK(monero_utils_is_valid_private_spend_key(PRIVATE_SPEND_KEY));
+  CHECK(!monero_utils_is_valid_private_spend_key(""));
+
+  CHECK(monero_utils_is_valid_public_spend_key(PUBLIC_SPEND_KEY));
+  EXPECT_OK(monero_utils_validate_public_spend_key(PUBLIC_SPEND_KEY));
+  CHECK(!monero_utils_is_valid_public_spend_key(""));
+}
+
+static void test_mnemonic_validation(void) {
+  EXPECT_OK(monero_utils_validate_mnemonic(SEED, ""));
+  CHECK(monero_utils_is_valid_mnemonic(SEED, ""));
+  CHECK(monero_utils_is_valid_mnemonic(SEED, "English"));
+  CHECK(!monero_utils_is_valid_mnemonic(SEED, "Spanish")); // wrong language for this seed
+  CHECK(!monero_utils_is_valid_mnemonic("invalid monero wallet seed", ""));
+  CHECK(!monero_utils_is_valid_mnemonic("", ""));
+  CHECK(!monero_utils_is_valid_mnemonic(NULL, ""));
+}
+
+static void test_seed_language_validation(void) {
+  CHECK(monero_utils_is_valid_language("Italian"));
+  CHECK(monero_utils_is_valid_language("English"));
+  CHECK(monero_utils_is_valid_language("German"));
+  CHECK(!monero_utils_is_valid_language(""));
+  CHECK(!monero_utils_is_valid_language("english")); // case-sensitive
+  CHECK(!monero_utils_is_valid_language("italian"));
+}
+
+static void test_payment_id_validation(void) {
+  static const char* valid_ids[] = {
+    "43e04076e176b768", "ef35647e9842991c", "8434d5452ad1b0ab",
+    "3b5ac230d2666177", "87fdf837b5e6a390", "304e0fa65b9c9e14"
+  };
+  for (size_t i = 0; i < sizeof(valid_ids) / sizeof(valid_ids[0]); i++) {
+    CHECK(monero_utils_is_valid_payment_id(valid_ids[i]));
+    EXPECT_OK(monero_utils_validate_payment_id(valid_ids[i]));
+  }
+
+  // is_valid_payment_id accepts either a 16 or 64 hex char payment id
+  CHECK(monero_utils_is_valid_payment_id("87fdf837b5e6a390ef35647e9842991c8434d5452ad1b0ab304e0fa65b9c9e14"));
+
+  static const char* invalid_ids[] = {
+    "", "wijqwnn38y", "87fdf837b5e6a39", "3b5ac230d26661778",
+    "304e0fa65b9c9e14304e0fa65b9c9e14",
+    "zzzzzzzzzzzzzzzz", "zzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzz"
+  };
+  for (size_t i = 0; i < sizeof(invalid_ids) / sizeof(invalid_ids[0]); i++) {
+    CHECK(!monero_utils_is_valid_payment_id(invalid_ids[i]));
+    EXPECT_ERR_MSG(monero_utils_validate_payment_id(invalid_ids[i]), "payment id expected to be 64 or 16 hex characters");
+  }
+}
+
+static void test_payment_id_long_short_validation(void) {
+  const char* long_id = "87fdf837b5e6a390ef35647e9842991c8434d5452ad1b0ab304e0fa65b9c9e14";
+  const char* short_id = "87fdf837b5e6a390";
+
+  CHECK(monero_utils_is_valid_payment_id_long(long_id));
+  CHECK(!monero_utils_is_valid_payment_id_long(short_id));
+  CHECK(!monero_utils_is_valid_payment_id_long(""));
+  CHECK(!monero_utils_is_valid_payment_id_long("wijqwnn38y"));
+  EXPECT_OK(monero_utils_validate_payment_id_long(long_id));
+  EXPECT_ERR_MSG(monero_utils_validate_payment_id_long(short_id), "Invalid long payment id");
+  EXPECT_ERR_MSG(monero_utils_validate_payment_id_long("wijqwnn38y"), "Invalid long payment id");
+
+  CHECK(monero_utils_is_valid_payment_id_short(short_id));
+  CHECK(!monero_utils_is_valid_payment_id_short(long_id));
+  CHECK(!monero_utils_is_valid_payment_id_short(""));
+  EXPECT_OK(monero_utils_validate_payment_id_short(short_id));
+  EXPECT_ERR_MSG(monero_utils_validate_payment_id_short(long_id), "Invalid short payment id");
+
+  // parse_payment_id_long/short: same validity, plus the decoded bytes come back
+  uint8_t buf32[32];
+  uint8_t buf8[8];
+  CHECK(monero_utils_parse_payment_id_long(long_id, buf32));
+  CHECK(!monero_utils_parse_payment_id_long(short_id, buf32));
+  CHECK(monero_utils_parse_payment_id_short(short_id, buf8));
+  CHECK(!monero_utils_parse_payment_id_short(long_id, buf8));
+}
+
+// ------------------------------ AMOUNTS / IDS -------------------------------
+
+static void test_atomic_unit_conversion(void) {
+  uint64_t out = 0;
+
+  EXPECT_OK(monero_utils_xmr_to_atomic_units(1.0, &out));
+  CHECK(out == 1000000000000ULL);
+  CHECK(monero_utils_atomic_units_to_xmr(1000000000000ULL) == 1.0);
+
+  EXPECT_OK(monero_utils_xmr_to_atomic_units(0.001, &out));
+  CHECK(out == 1000000000ULL);
+
+  EXPECT_OK(monero_utils_xmr_to_atomic_units(0.25, &out));
+  CHECK(out == 250000000000ULL);
+  CHECK(monero_utils_atomic_units_to_xmr(250000000000ULL) == 0.25);
+
+  EXPECT_OK(monero_utils_xmr_to_atomic_units(2.79672619, &out));
+  CHECK(out == 2796726190000ULL);
+  CHECK(monero_utils_atomic_units_to_xmr(2796726190000ULL) == 2.79672619);
+}
+
+static void test_xmr_to_atomic_units_zero(void) {
+  uint64_t out = 1;
+  EXPECT_OK(monero_utils_xmr_to_atomic_units(0.0, &out));
+  CHECK(out == 0);
+  out = 1;
+  EXPECT_OK(monero_utils_xmr_to_atomic_units(-0.0, &out)); // -0.0 < 0 is false in IEEE 754
+  CHECK(out == 0);
+}
+
+static void test_xmr_to_atomic_units_rounds_down_to_zero(void) {
+  uint64_t out = 1;
+  EXPECT_OK(monero_utils_xmr_to_atomic_units(1e-13, &out));
+  CHECK(out == 0);
+}
+
+static void test_xmr_to_atomic_units_invalid_amount(void) {
+  uint64_t out;
+  EXPECT_ERR_MSG(monero_utils_xmr_to_atomic_units(-1.0, &out), "amount must be a finite, non-negative number");
+  EXPECT_ERR_MSG(monero_utils_xmr_to_atomic_units(NAN, &out), "amount must be a finite, non-negative number");
+  EXPECT_ERR_MSG(monero_utils_xmr_to_atomic_units(INFINITY, &out), "amount must be a finite, non-negative number");
+  EXPECT_ERR_MSG(monero_utils_xmr_to_atomic_units(-INFINITY, &out), "amount must be a finite, non-negative number");
+}
+
+static void test_xmr_to_atomic_units_overflow(void) {
+  uint64_t out;
+  EXPECT_ERR(monero_utils_xmr_to_atomic_units(18446745.0, &out));
+  EXPECT_ERR(monero_utils_xmr_to_atomic_units(2e22, &out));
+}
+
+static void test_get_ring_size(void) {
+  CHECK(monero_utils_get_ring_size() == 16);
+}
+
+// --------------------------- INTEGRATED ADDRESS -----------------------------
+
+static void test_get_integrated_address(void) {
+  char* json = NULL;
+  char value[256];
+
+  // random payment id
+  EXPECT_OK(monero_utils_get_integrated_address(MONERO_UTILS_NETWORK_STAGENET, STAGENET_PRIMARY_4, "", &json));
+  CHECK(json != NULL);
+  if (json != NULL) {
+    CHECK(extract_json_string(json, "standardAddress", value, sizeof(value)) && strcmp(value, STAGENET_PRIMARY_4) == 0);
+    CHECK(extract_json_string(json, "paymentId", value, sizeof(value)) && strlen(value) == 16);
+    CHECK(extract_json_string(json, "integratedAddress", value, sizeof(value)) && strlen(value) == 106);
+    monero_utils_free(json);
+    json = NULL;
+  }
+
+  // specific payment id
+  EXPECT_OK(monero_utils_get_integrated_address(MONERO_UTILS_NETWORK_STAGENET, STAGENET_PRIMARY_4, "03284e41c342f036", &json));
+  if (json != NULL) {
+    CHECK(extract_json_string(json, "paymentId", value, sizeof(value)) && strcmp(value, "03284e41c342f036") == 0);
+    monero_utils_free(json);
+    json = NULL;
+  }
+
+  // with a subaddress
+  EXPECT_OK(monero_utils_get_integrated_address(MONERO_UTILS_NETWORK_STAGENET, STAGENET_SUBADDR_4, "03284e41c342f036", &json));
+  if (json != NULL) {
+    CHECK(extract_json_string(json, "standardAddress", value, sizeof(value)) && strcmp(value, STAGENET_SUBADDR_4) == 0);
+    monero_utils_free(json);
+    json = NULL;
+  }
+
+  // invalid payment id
+  EXPECT_ERR_MSG(monero_utils_get_integrated_address(MONERO_UTILS_NETWORK_STAGENET, STAGENET_PRIMARY_4, "123", &json), "Invalid payment id");
+  CHECK(json == NULL); // out param left untouched on error
+}
+
+// ------------------------------ PAYMENT URIS --------------------------------
+
+static void test_get_payment_uri(void) {
+  char* uri = NULL;
+  char tx_config_json[512];
+  snprintf(tx_config_json, sizeof(tx_config_json),
+      "{\"destinations\":[{\"address\":\"%s\",\"amount\":250000000000}],\"recipientName\":\"John Doe\",\"note\":\"My transfer to wallet\"}",
+      MAINNET_PRIMARY_1);
+
+  EXPECT_OK(monero_utils_get_payment_uri(tx_config_json, MONERO_UTILS_NETWORK_MAINNET, &uri));
+  if (uri != NULL) {
+    char expected[512];
+    snprintf(expected, sizeof(expected), "monero:%s?tx_amount=0.250000000000&recipient_name=John%%20Doe&tx_description=My%%20transfer%%20to%%20wallet", MAINNET_PRIMARY_1);
+    CHECK(strcmp(uri, expected) == 0);
+
+    // round trip through parse_payment_uri()
+    char* parsed_json = NULL;
+    EXPECT_OK(monero_utils_parse_payment_uri(uri, MONERO_UTILS_NETWORK_MAINNET, &parsed_json));
+    if (parsed_json != NULL) {
+      CHECK(strstr(parsed_json, MAINNET_PRIMARY_1) != NULL);
+      CHECK(strstr(parsed_json, "250000000000") != NULL);
+      monero_utils_free(parsed_json);
+    }
+
+    monero_utils_free(uri);
+  }
+}
+
+static void test_parse_payment_uri_wrong_scheme(void) {
+  char* parsed_json = NULL;
+  char uri[256];
+  snprintf(uri, sizeof(uri), "bitcoin:%s", MAINNET_PRIMARY_1);
+  EXPECT_ERR(monero_utils_parse_payment_uri(uri, MONERO_UTILS_NETWORK_MAINNET, &parsed_json));
+  CHECK(parsed_json == NULL);
+}
+
+// ------------------------------ JSON / BINARY -------------------------------
+
+static void test_json_binary_roundtrip(void) {
+  uint8_t* bin = NULL;
+  size_t bin_len = 0;
+  char* json2 = NULL;
+
+  EXPECT_OK(monero_utils_json_to_binary("{\"heights\":[111,222,333]}", &bin, &bin_len));
+  CHECK(bin != NULL && bin_len > 0);
+  if (bin != NULL) {
+    EXPECT_OK(monero_utils_binary_to_json(bin, bin_len, &json2));
+    if (json2 != NULL) {
+      CHECK(strstr(json2, "heights") != NULL);
+      CHECK(strstr(json2, "111") != NULL);
+      CHECK(strstr(json2, "222") != NULL);
+      CHECK(strstr(json2, "333") != NULL);
+      monero_utils_free(json2);
+      json2 = NULL;
+    }
+    monero_utils_free(bin);
+    bin = NULL;
+  }
+
+  // uint64 values above INT64_MAX must not come back out as negative numbers
+  EXPECT_OK(monero_utils_json_to_binary("{\"heights\":[18446744073709551615]}", &bin, &bin_len));
+  if (bin != NULL) {
+    EXPECT_OK(monero_utils_binary_to_json(bin, bin_len, &json2));
+    if (json2 != NULL) {
+      CHECK(strstr(json2, "18446744073709551615") != NULL);
+      monero_utils_free(json2);
+    }
+    monero_utils_free(bin);
+  }
+}
+
+// ---------------------------------- MAIN ------------------------------------
+
+int main(void) {
+  test_address_validation();
+  test_key_validation();
+  test_mnemonic_validation();
+  test_seed_language_validation();
+  test_payment_id_validation();
+  test_payment_id_long_short_validation();
+  test_atomic_unit_conversion();
+  test_xmr_to_atomic_units_zero();
+  test_xmr_to_atomic_units_rounds_down_to_zero();
+  test_xmr_to_atomic_units_invalid_amount();
+  test_xmr_to_atomic_units_overflow();
+  test_get_ring_size();
+  test_get_integrated_address();
+  test_get_payment_uri();
+  test_parse_payment_uri_wrong_scheme();
+  test_json_binary_roundtrip();
+
+  printf("%d/%d checks passed\n", g_checks - g_failures, g_checks);
+  return g_failures == 0 ? EXIT_SUCCESS : EXIT_FAILURE;
+}

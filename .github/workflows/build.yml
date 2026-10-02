@@ -150,9 +150,16 @@ jobs:
           fi
           nm external/monero-cpp/build/libmonero-cpp.a | grep -q monero_wallet_full || { echo "missing api in static library"; exit 1; }
 
-      # TODO(C ABI): once a top-level CMakeLists.txt for the monero-c C ABI exists, add
-      # "Build monero-c library" / "Verify monero-c library" / "Run monero-c tests" steps here,
-      # building against external/monero-cpp/build, and upload its artifacts.
+      - name: Build monero_c library
+        run: |
+          mkdir -p build
+          cd build
+          cmake -DBUILD_TESTS=ON -DBOOST_ROOT=/usr/local -DBoost_NO_SYSTEM_PATHS=ON ..
+          cmake --build . -j3
+          cd ..
+
+      - name: Run monero_c tests
+        run: ctest --test-dir build --output-on-failure
 
   windows:
     name: windows
@@ -254,9 +261,18 @@ jobs:
           fi
           nm external/monero-cpp/build/libmonero-cpp.a | grep -q monero_wallet_full || { echo "missing api in static library"; exit 1; }
 
-      # TODO(C ABI): once a top-level CMakeLists.txt for the monero-c C ABI exists, add
-      # "Build monero-c library" / "Verify monero-c library" / "Run monero-c tests" steps here,
-      # building against external/monero-cpp/build, and upload its artifacts.
+      - name: Build monero_c library
+        shell: msys2 {0}
+        run: |
+          mkdir -p build
+          cd build
+          cmake -DBUILD_TESTS=ON ..
+          cmake --build .
+          cd ..
+
+      - name: Run monero_c tests
+        shell: msys2 {0}
+        run: ctest --test-dir build --output-on-failure
 
   mac-os:
     name: ${{ matrix.arch }}
@@ -342,6 +358,13 @@ jobs:
           nm -gU external/monero-cpp/build/libmonero-cpp.dylib | grep -q monero_wallet_full || { echo "missing monero-cpp api exports"; exit 1; }
           nm external/monero-cpp/build/libmonero-cpp.a | grep -q monero_wallet_full || { echo "missing api in static library"; exit 1; }
 
-      # TODO(C ABI): once a top-level CMakeLists.txt for the monero-c C ABI exists, add
-      # "Build monero-c library" / "Verify monero-c library" / "Run monero-c tests" steps here,
-      # building against external/monero-cpp/build, and upload its artifacts.
+      - name: Build monero_c library
+        run: |
+          mkdir -p build
+          cd build
+          cmake -DBUILD_TESTS=ON -DBOOST_ROOT=/usr/local -DBoost_NO_SYSTEM_PATHS=ON ..
+          cmake --build . -j3
+          cd ..
+
+      - name: Run monero_c tests
+        run: ctest --test-dir build --output-on-failure
