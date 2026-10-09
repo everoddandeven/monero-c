@@ -436,6 +436,7 @@ static void test_every_function_rejects_null_wallet(void) {
   EXPECT_ERR_MSG(monero_wallet_rpc_get_subaddresses(NULL, 0, NULL, 0, false, &json), "wallet must not be null");
   EXPECT_ERR_MSG(monero_wallet_rpc_set_daemon_connection(NULL, "x", false, "x"), "wallet must not be null");
 
+  CHECK(json == NULL);
   monero_wallet_listener_free(listener);
 }
 
