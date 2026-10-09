@@ -333,9 +333,12 @@ jobs:
       - name: Install boost v1.87.0
         shell: msys2 {0}
         run: |
+          # boost depends on boost-libs without a version, so install both from files or pacman takes the newest boost-libs
           wget --tries=5 --waitretry=5 --timeout=30 --retry-on-http-error=500,502,503,504 https://repo.msys2.org/mingw/mingw64/mingw-w64-x86_64-boost-1.87.0-3-any.pkg.tar.zst
+          wget --tries=5 --waitretry=5 --timeout=30 --retry-on-http-error=500,502,503,504 https://repo.msys2.org/mingw/mingw64/mingw-w64-x86_64-boost-libs-1.87.0-3-any.pkg.tar.zst
           echo "241919a5885a9270d0e0937e71cf5e146c2a8cabecc2714f09248350181cb1b6  mingw-w64-x86_64-boost-1.87.0-3-any.pkg.tar.zst" | sha256sum -c
-          pacman -U --noconfirm mingw-w64-x86_64-boost-1.87.0-3-any.pkg.tar.zst
+          echo "5fd77df3e5983ba0d9c689f46151119e0e59b3da6850c5a0ba54068eeae7749c  mingw-w64-x86_64-boost-libs-1.87.0-3-any.pkg.tar.zst" | sha256sum -c
+          pacman -U --noconfirm mingw-w64-x86_64-boost-libs-1.87.0-3-any.pkg.tar.zst mingw-w64-x86_64-boost-1.87.0-3-any.pkg.tar.zst
           # record versions of the msys2 libraries that get statically linked into the shipped binary
           pacman -Q | grep mingw-w64 | sort
 
