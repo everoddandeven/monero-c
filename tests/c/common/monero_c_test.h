@@ -33,6 +33,7 @@
 
 static int g_checks = 0;
 static int g_failures = 0;
+static int g_expected_failures = 0;
 
 #define CHECK(cond) do { \
   g_checks++; \
@@ -69,6 +70,30 @@ static int g_failures = 0;
   } else if (strcmp(monero_last_error(), (expected_msg)) != 0) { \
     g_failures++; \
     fprintf(stderr, "FAIL %s:%d: expected error \"%s\", got \"%s\"\n", __FILE__, __LINE__, (expected_msg), monero_last_error()); \
+  } \
+} while (0)
+
+// a check that is known to fail until a fix arrives from upstream. It counts as an expected failure while it fails and as a failure when it
+// passes, so the marker has to be turned into a plain check when the fix is in
+#define XFAIL_CHECK(cond) do { \
+  g_checks++; \
+  if (!(cond)) { \
+    g_expected_failures++; \
+  } else { \
+    g_failures++; \
+    fprintf(stderr, "FAIL %s:%d: expected to fail but passed, remove the XFAIL: %s\n", __FILE__, __LINE__, #cond); \
+  } \
+} while (0)
+
+// EXPECT_ERR for a call that is known to succeed until a fix arrives from upstream, with the rule of XFAIL_CHECK
+#define XFAIL_ERR(expr) do { \
+  monero_result _r = (expr); \
+  g_checks++; \
+  if (_r != MONERO_ERROR) { \
+    g_expected_failures++; \
+  } else { \
+    g_failures++; \
+    fprintf(stderr, "FAIL %s:%d: expected to succeed but failed, remove the XFAIL: %s\n", __FILE__, __LINE__, #expr); \
   } \
 } while (0)
 

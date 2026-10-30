@@ -409,6 +409,58 @@ static void test_json_binary_roundtrip(void) {
   }
 }
 
+// monero-cpp drops the result of the epee loaders in json_to_binary() and binary_to_json(), so input that is not a storage comes out as the
+// empty storage instead of an error (libmonero/monero-c#27). Remove the XFAIL markers when the submodule has the fix
+static void test_json_binary_invalid_input(void) {
+  const char* invalid_json[] = {"not json at all", "[1,2,3]"};
+  const uint8_t garbage[] = {0xde, 0xad, 0xbe, 0xef, 1, 2, 3};
+  uint8_t* bin = NULL;
+  size_t bin_len = 0;
+  char* json = NULL;
+  size_t i;
+
+  // the empty storage is valid, and converts both ways
+  EXPECT_OK(monero_utils_json_to_binary("{}", &bin, &bin_len));
+  CHECK(bin != NULL && bin_len > 0);
+  if (bin != NULL) {
+    EXPECT_OK(monero_utils_binary_to_json(bin, bin_len, &json));
+    CHECK(json != NULL && strchr(json, '{') != NULL);
+    monero_utils_free(json);
+    json = NULL;
+  }
+
+  // a truncated storage is not valid
+  if (bin != NULL) {
+    XFAIL_ERR(monero_utils_binary_to_json(bin, bin_len - 1, &json));
+    monero_utils_free(json);
+    json = NULL;
+    monero_utils_free(bin);
+    bin = NULL;
+  }
+
+  for (i = 0; i < sizeof(invalid_json) / sizeof(invalid_json[0]); i++) {
+    bin_len = 7;
+    XFAIL_ERR(monero_utils_json_to_binary(invalid_json[i], &bin, &bin_len));
+    XFAIL_CHECK(bin == NULL && bin_len == 0);
+    monero_utils_free(bin);
+    bin = NULL;
+  }
+
+  XFAIL_ERR(monero_utils_binary_to_json(garbage, sizeof(garbage), &json));
+  XFAIL_CHECK(json == NULL);
+  monero_utils_free(json);
+  json = NULL;
+
+  XFAIL_ERR(monero_utils_binary_to_json(garbage, 0, &json));
+  XFAIL_CHECK(json == NULL);
+  monero_utils_free(json);
+  json = NULL;
+
+  XFAIL_ERR(monero_utils_binary_to_json(NULL, 0, &json));
+  XFAIL_CHECK(json == NULL);
+  monero_utils_free(json);
+}
+
 // both converters read a get_blocks.bin response
 static void test_binary_blocks_to_json(void) {
   uint8_t* bin = NULL;
@@ -539,6 +591,7 @@ int main(void) {
   test_parse_payment_uri_wrong_scheme();
   test_json_depth_limit();
   test_json_binary_roundtrip();
+  test_json_binary_invalid_input();
   test_binary_blocks_to_json();
   test_failed_calls_reset_outputs();
   test_logging();
@@ -546,6 +599,6 @@ int main(void) {
   test_logging_from_several_threads();
 #endif
 
-  printf("%d/%d checks passed\n", g_checks - g_failures, g_checks);
+  printf("%d/%d checks passed, %d expected failures\n", g_checks - g_failures, g_checks, g_expected_failures);
   return g_failures == 0 ? EXIT_SUCCESS : EXIT_FAILURE;
 }
