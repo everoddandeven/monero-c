@@ -353,6 +353,13 @@ std::string json_of_tx_sets(const std::vector<std::shared_ptr<monero::monero_tx_
   return "{\"txSets\":" + json_of_list(sets) + "}";
 }
 
+// a list of values that have no parent, accounts, subaddresses or address book entries, in an object with one member, as the bridge of
+// monero-java has them
+template <class T>
+std::string json_of_wrapped(const char* key, const std::vector<T>& items) {
+  return std::string("{\"") + key + "\":" + json_of_list(items) + "}";
+}
+
 std::vector<std::shared_ptr<monero::monero_block>> blocks_of_outputs(const std::vector<std::shared_ptr<monero::monero_output_wallet>>& outputs) {
   std::vector<std::shared_ptr<monero::monero_tx_wallet>> txs;
   for (const std::shared_ptr<monero::monero_output_wallet>& output : outputs) {
@@ -756,7 +763,7 @@ monero_result monero_wallet_get_subaddresses(::monero_wallet* wallet, uint32_t a
   if (!require(wallet, "wallet") || !require(out_json, "out_json")) return MONERO_ERROR;
   return guard([&] {
     auto indices = array_of(subaddress_indices, num_subaddress_indices, "subaddress_indices");
-    *out_json = dup_string(json_of_list(wallet->wallet->get_subaddresses(account_idx, indices)));
+    *out_json = dup_string(json_of_wrapped("subaddresses", wallet->wallet->get_subaddresses(account_idx, indices)));
   });
 }
 
@@ -790,7 +797,7 @@ monero_result monero_wallet_delete_address_book_entry(::monero_wallet* wallet, u
 monero_result monero_wallet_get_address_book_entries(::monero_wallet* wallet, const uint64_t* indices, size_t num_indices, char** out_json) {
   reset_out(out_json);
   if (!require(wallet, "wallet") || !require(out_json, "out_json")) return MONERO_ERROR;
-  return guard([&] { *out_json = dup_string(json_of_list(wallet->wallet->get_address_book_entries(array_of(indices, num_indices, "indices")))); });
+  return guard([&] { *out_json = dup_string(json_of_wrapped("entries", wallet->wallet->get_address_book_entries(array_of(indices, num_indices, "indices")))); });
 }
 
 monero_result monero_wallet_change_password(::monero_wallet* wallet, const char* old_password, const char* new_password) {
@@ -813,7 +820,7 @@ monero_result monero_wallet_create_subaddress(::monero_wallet* wallet, uint32_t 
 monero_result monero_wallet_get_accounts(::monero_wallet* wallet, bool include_subaddresses, char** out_json) {
   reset_out(out_json);
   if (!require(wallet, "wallet") || !require(out_json, "out_json")) return MONERO_ERROR;
-  return guard([&] { *out_json = dup_string(json_of_list(wallet->wallet->get_accounts(include_subaddresses))); });
+  return guard([&] { *out_json = dup_string(json_of_wrapped("accounts", wallet->wallet->get_accounts(include_subaddresses))); });
 }
 
 monero_result monero_wallet_get_address_index(::monero_wallet* wallet, const char* address, char** out_json) {
@@ -1539,7 +1546,7 @@ monero_result monero_wallet_rpc_get_account(::monero_wallet* wallet, uint32_t ac
 monero_result monero_wallet_rpc_get_accounts(::monero_wallet* wallet, bool include_subaddresses, const char* tag, bool skip_balances, char** out_json) {
   reset_out(out_json);
   if (!require(wallet, "wallet") || !require(out_json, "out_json")) return MONERO_ERROR;
-  return guard([&] { *out_json = dup_string(json_of_list(as_rpc(wallet).get_accounts(include_subaddresses, safe_str(tag), skip_balances))); });
+  return guard([&] { *out_json = dup_string(json_of_wrapped("accounts", as_rpc(wallet).get_accounts(include_subaddresses, safe_str(tag), skip_balances))); });
 }
 
 monero_result monero_wallet_rpc_get_subaddresses(::monero_wallet* wallet, uint32_t account_idx, const uint32_t* subaddress_indices, size_t num_subaddress_indices, bool skip_balances, char** out_json) {
@@ -1547,7 +1554,7 @@ monero_result monero_wallet_rpc_get_subaddresses(::monero_wallet* wallet, uint32
   if (!require(wallet, "wallet") || !require(out_json, "out_json")) return MONERO_ERROR;
   return guard([&] {
     auto indices = array_of(subaddress_indices, num_subaddress_indices, "subaddress_indices");
-    *out_json = dup_string(json_of_list(as_rpc(wallet).get_subaddresses(account_idx, indices, skip_balances)));
+    *out_json = dup_string(json_of_wrapped("subaddresses", as_rpc(wallet).get_subaddresses(account_idx, indices, skip_balances)));
   });
 }
 

@@ -94,6 +94,10 @@ static int is_list(const char* json) {
   return json != NULL && json[0] == '[';
 }
 
+static int starts_with(const char* json, const char* prefix) {
+  return json != NULL && strncmp(json, prefix, strlen(prefix)) == 0;
+}
+
 static int is_blocks(const char* json) {
   return json != NULL && strncmp(json, "{\"blocks\":[", 11) == 0;
 }
@@ -793,11 +797,11 @@ static void test_rpc(const char* daemon_uri, const char* rpc_uri) {
   monero_utils_free(json);
   json = NULL;
   EXPECT_OK(monero_wallet_rpc_get_accounts(rpc, true, NULL, true, &json));
-  CHECK(is_list(json) && has(json, "\"index\":0"));
+  CHECK(starts_with(json, "{\"accounts\":[") && has(json, "\"index\":0"));
   monero_utils_free(json);
   json = NULL;
   EXPECT_OK(monero_wallet_rpc_get_subaddresses(rpc, 0, NULL, 0, true, &json));
-  CHECK(is_list(json) && has(json, "\"index\":0"));
+  CHECK(starts_with(json, "{\"subaddresses\":[") && has(json, "\"index\":0"));
   monero_utils_free(json);
   json = NULL;
 

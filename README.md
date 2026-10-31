@@ -206,7 +206,7 @@ The results come with the parents that their models have, so a transfer is in it
 ]}
 ```
 
-The lists of values that have no parent, such as the accounts, the subaddresses, the address book and the key images, are plain JSON arrays.
+The accounts, the subaddresses and the address book come in an object with one member, as in the bridge of monero-java: `{"accounts":[...]}`, `{"subaddresses":[...]}` and `{"entries":[...]}`. The other lists of values that have no parent, such as the key images, the seed languages, the notes and the hashes, are plain JSON arrays.
 
 ## Limits
 

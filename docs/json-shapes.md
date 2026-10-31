@@ -85,9 +85,13 @@ A binding then reads it with the parser of the results, and gets the same `Moner
 
 `monero_daemon_get_tx()`, `monero_daemon_get_txs()` and `monero_daemon_get_tx_pool()` return `{"blocks":[...]}` with the height and the timestamp that monero-cpp reads, and a block without `height` for the pool. `monero_daemon_get_tx()` still gives NULL for a tx that the daemon doesn't have. The calls that return blocks (`get_block_by_hash()`, `get_blocks_by_range()` and the others) don't change, because a block is the root, and neither do the headers and the listeners of the daemon.
 
+### Lists with a name: `{"accounts":[...]}`
+
+`monero_wallet_get_accounts()` and `monero_wallet_rpc_get_accounts()` return `{"accounts":[...]}`, `monero_wallet_get_subaddresses()` and `monero_wallet_rpc_get_subaddresses()` return `{"subaddresses":[...]}`, and `monero_wallet_get_address_book_entries()` returns `{"entries":[...]}`, as the bridge of monero-java does. A list with no element is `{"accounts":[]}`. The account, the subaddress and the entry inside are the ones that `get_account()`, `get_subaddress()` and `add_address_book_entry()` return.
+
 ### What doesn't change
 
-The lists of values that have no parent stay plain arrays: the accounts, the subaddresses, the address book, the key images, the seed languages, the notes, the hashes. The tx config, the wallet config, the connection JSON and the sync result stay as they are.
+The lists of values that have no parent stay plain arrays: the key images, the seed languages, the notes, the hashes and the account tags. The tx config, the wallet config, the connection JSON and the sync result stay as they are.
 
 ## Decisions
 
@@ -99,7 +103,7 @@ They were taken as recommended, in the order of the steps. The decision 7 stays 
 | 2 | The input of the queries | A: flat, and monero-c translates it. B: block-rooted, as monero-java | A. It doesn't break the callers, and it fixes `txQuery` without making them build the block form |
 | 3 | The tx sets | A: `{"txSets":[...]}` for every call. B: the set itself for `create_txs()`, `create_tx()` and `sweep_output()`, `{"txSets"}` for the sweeps, as monero-java | A. One parser. B only helps who ports the Java code line by line |
 | 4 | The payload of the listener | A: the output in its tx and block, as `get_outputs()`. B: a flat object, `{"height","txHash","amount","accountIndex","subaddressIndex","version","unlockTime","isLocked"}` as the JNI | A. The model is the same as the one of the results. B is easier to read by hand, but it is a second format, and it has to grow with each field |
-| 5 | The other lists | A: plain arrays. B: wrap them as the bridge does (`{"accounts":[...]}`, `{"subaddresses":[...]}`, `{"entries":[...]}`), as `MoneroWalletData` of monero-csharp has them | A, because they carry no context. B costs a break in many calls to match the data class of one binding, which can adapt it |
+| 5 | The other lists | A: plain arrays. B: wrap them as the bridge does (`{"accounts":[...]}`, `{"subaddresses":[...]}`, `{"entries":[...]}`), as `MoneroWalletData` of monero-csharp has them | A was recommended and taken, because they carry no context. It was reversed after 0.1.0-alpha.1 for the accounts, the subaddresses and the address book, to have the shape of the bridge. It breaks the callers of five functions, and bumps the minor version of the ABI. The other lists stay plain |
 | 6 | The daemon txs | A: blocks too. B: leave them | A, for the height. It is three calls |
 | 7 | The ABI version | Nothing was released, so the version stays 0.1.0 and the JSON change goes in under it, as the `is_trusted` change of PR #16 did. After the first release a change like this bumps the minor version | stay at 0.1.0 until the first release |
 

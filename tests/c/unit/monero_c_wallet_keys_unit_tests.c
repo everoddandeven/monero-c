@@ -267,6 +267,7 @@ static void test_subaddresses_json(void) {
   uint32_t indices[2] = {1, 2};
   char* json = NULL;
   EXPECT_OK(monero_wallet_get_subaddresses(wallet, 0, indices, 2, &json));
+  CHECK(json != NULL && strncmp(json, "{\"subaddresses\":[", 17) == 0);
   CHECK(json != NULL && sub1 != NULL && strstr(json, sub1) != NULL);
   CHECK(json != NULL && sub2 != NULL && strstr(json, sub2) != NULL);
   CHECK(json != NULL && strstr(json, "\"accountIndex\":0") != NULL);

@@ -509,7 +509,7 @@ MONERO_EXPORT monero_result monero_wallet_get_account(monero_wallet* wallet, uin
  * @param account_idx is the account index
  * @param subaddress_indices are the subaddress indices, or NULL for all of them
  * @param num_subaddress_indices is the number of elements in subaddress_indices, 0 for all of them
- * @param out_json receives a JSON array of monero_subaddress. Free with monero_utils_free()
+ * @param out_json receives a JSON object with the list, {"subaddresses":[monero_subaddress,...]}. Free with monero_utils_free()
  * @return MONERO_OK or MONERO_ERROR
  */
 MONERO_EXPORT monero_result monero_wallet_get_subaddresses(monero_wallet* wallet, uint32_t account_idx, const uint32_t* subaddress_indices, size_t num_subaddress_indices, char** out_json);
@@ -587,7 +587,7 @@ MONERO_EXPORT monero_result monero_wallet_delete_address_book_entry(monero_walle
  * @param wallet is the wallet handle
  * @param indices are the indices of the entries
  * @param num_indices is the number of elements in indices
- * @param out_json receives a JSON array of monero_address_book_entry. Free with monero_utils_free()
+ * @param out_json receives a JSON object with the list, {"entries":[monero_address_book_entry,...]}. Free with monero_utils_free()
  * @return MONERO_OK or MONERO_ERROR
  */
 MONERO_EXPORT monero_result monero_wallet_get_address_book_entries(monero_wallet* wallet, const uint64_t* indices, size_t num_indices, char** out_json);
@@ -628,7 +628,7 @@ MONERO_EXPORT monero_result monero_wallet_create_subaddress(monero_wallet* walle
  *
  * @param wallet is the wallet handle
  * @param include_subaddresses is true to include the subaddresses of each account
- * @param out_json receives a JSON array of monero_account. Free with monero_utils_free()
+ * @param out_json receives a JSON object with the list, {"accounts":[monero_account,...]}. Free with monero_utils_free()
  * @return MONERO_OK or MONERO_ERROR
  */
 MONERO_EXPORT monero_result monero_wallet_get_accounts(monero_wallet* wallet, bool include_subaddresses, char** out_json);
@@ -1700,7 +1700,7 @@ MONERO_EXPORT monero_result monero_wallet_rpc_get_account(monero_wallet* wallet,
  * @param include_subaddresses is true to include the subaddresses of each account
  * @param tag is the tag of the accounts. NULL or "" for all of them
  * @param skip_balances is true to skip the balances, which is faster
- * @param out_json receives a JSON array of monero_account. Free with monero_utils_free()
+ * @param out_json receives a JSON object with the list, {"accounts":[monero_account,...]}. Free with monero_utils_free()
  * @return MONERO_OK or MONERO_ERROR
  */
 MONERO_EXPORT monero_result monero_wallet_rpc_get_accounts(monero_wallet* wallet, bool include_subaddresses, const char* tag, bool skip_balances, char** out_json);
@@ -1713,7 +1713,7 @@ MONERO_EXPORT monero_result monero_wallet_rpc_get_accounts(monero_wallet* wallet
  * @param subaddress_indices are the subaddress indices, or NULL for all of them
  * @param num_subaddress_indices is the number of elements in subaddress_indices, 0 for all of them
  * @param skip_balances is true to skip the balances, which is faster
- * @param out_json receives a JSON array of monero_subaddress. Free with monero_utils_free()
+ * @param out_json receives a JSON object with the list, {"subaddresses":[monero_subaddress,...]}. Free with monero_utils_free()
  * @return MONERO_OK or MONERO_ERROR
  */
 MONERO_EXPORT monero_result monero_wallet_rpc_get_subaddresses(monero_wallet* wallet, uint32_t account_idx, const uint32_t* subaddress_indices, size_t num_subaddress_indices, bool skip_balances, char** out_json);
