@@ -70,6 +70,8 @@ jobs:
 
       - name: Install openssl
         run: |
+          # ccache wraps gcc and g++, which the links in /usr/lib/ccache stand for
+          export PATH=/usr/lib/ccache:$PATH
           # build the current openssl LTS statically (/etc/ssl matches most distros' CA layout)
           wget --tries=5 --waitretry=5 --timeout=30 --retry-on-http-error=500,502,503,504 https://github.com/openssl/openssl/releases/download/openssl-3.5.7/openssl-3.5.7.tar.gz
           echo "a8c0d28a529ca480f9f36cf5792e2cd21984552a3c8e4aa11a24aa31aeac98e8  openssl-3.5.7.tar.gz" | sha256sum -c
@@ -81,6 +83,8 @@ jobs:
 
       - name: Install expat
         run: |
+          # ccache wraps gcc and g++, which the links in /usr/lib/ccache stand for
+          export PATH=/usr/lib/ccache:$PATH
           wget --tries=5 --waitretry=5 --timeout=30 --retry-on-http-error=500,502,503,504 https://github.com/libexpat/libexpat/releases/download/R_2_7_1/expat-2.7.1.tar.bz2
           echo "45c98ae1e9b5127325d25186cf8c511fa814078e9efeae7987a574b482b79b3d  expat-2.7.1.tar.bz2" | sha256sum -c
           tar -xf expat-2.7.1.tar.bz2
@@ -91,6 +95,8 @@ jobs:
 
       - name: Install unbound
         run: |
+          # ccache wraps gcc and g++, which the links in /usr/lib/ccache stand for
+          export PATH=/usr/lib/ccache:$PATH
           wget --tries=5 --waitretry=5 --timeout=30 --retry-on-http-error=500,502,503,504 https://www.nlnetlabs.nl/downloads/unbound/unbound-1.22.0.tar.gz
           echo "c5dd1bdef5d5685b2cedb749158dd152c52d44f65529a34ac15cd88d4b1b3d43  unbound-1.22.0.tar.gz" | sha256sum -c
           tar xzf unbound-1.22.0.tar.gz
@@ -103,6 +109,8 @@ jobs:
 
       - name: Install libusb
         run: |
+          # ccache wraps gcc and g++, which the links in /usr/lib/ccache stand for
+          export PATH=/usr/lib/ccache:$PATH
           wget --tries=5 --waitretry=5 --timeout=30 --retry-on-http-error=500,502,503,504 https://github.com/libusb/libusb/releases/download/v1.0.27/libusb-1.0.27.tar.bz2
           echo "ffaa41d741a8a3bee244ac8e54a72ea05bf2879663c098c82fc5757853441575  libusb-1.0.27.tar.bz2" | sha256sum -c
           tar -xf libusb-1.0.27.tar.bz2
@@ -124,6 +132,8 @@ jobs:
 
       - name: Install boost
         run: |
+          # ccache wraps gcc and g++, which the links in /usr/lib/ccache stand for
+          export PATH=/usr/lib/ccache:$PATH
           # PIC static boost, same version on all platforms (no distro boost so headers and archives match)
           wget --tries=5 --waitretry=5 --timeout=30 --retry-on-http-error=500,502,503,504 https://archives.boost.io/release/1.85.0/source/boost_1_85_0.tar.bz2
           echo "7009fe1faa1697476bdc7027703a2badb84e849b7b0baad5086b087b971f8617  boost_1_85_0.tar.bz2" | sha256sum -c
