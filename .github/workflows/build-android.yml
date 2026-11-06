@@ -93,11 +93,14 @@ jobs:
           tar xzf openssl-3.5.7.tar.gz
           cd openssl-3.5.7
           ./Configure ${{ matrix.openssl }} -D__ANDROID_API__=${{ matrix.api }} --prefix="$PREFIX" --libdir=lib no-shared no-tests no-docs -fPIC
-          make -j3
+          # Configure looks for the clang of the NDK by its name, so ccache goes in when it is made
+          make -j3 CC="ccache $CC"
           make install_sw
 
       - name: Install expat
         run: |
+          # ccache wraps the compilers of the NDK that autotools take from the environment
+          export CC="ccache $CC" CXX="ccache $CXX"
           wget --tries=5 --waitretry=5 --timeout=30 --retry-on-http-error=500,502,503,504 https://github.com/libexpat/libexpat/releases/download/R_2_7_1/expat-2.7.1.tar.bz2
           echo "45c98ae1e9b5127325d25186cf8c511fa814078e9efeae7987a574b482b79b3d  expat-2.7.1.tar.bz2" | sha256sum -c
           tar -xf expat-2.7.1.tar.bz2
@@ -108,6 +111,8 @@ jobs:
 
       - name: Install unbound
         run: |
+          # ccache wraps the compilers of the NDK that autotools take from the environment
+          export CC="ccache $CC" CXX="ccache $CXX"
           wget --tries=5 --waitretry=5 --timeout=30 --retry-on-http-error=500,502,503,504 https://www.nlnetlabs.nl/downloads/unbound/unbound-1.22.0.tar.gz
           echo "c5dd1bdef5d5685b2cedb749158dd152c52d44f65529a34ac15cd88d4b1b3d43  unbound-1.22.0.tar.gz" | sha256sum -c
           tar xzf unbound-1.22.0.tar.gz
@@ -118,6 +123,8 @@ jobs:
 
       - name: Install libsodium
         run: |
+          # ccache wraps the compilers of the NDK that autotools take from the environment
+          export CC="ccache $CC" CXX="ccache $CXX"
           wget --tries=5 --waitretry=5 --timeout=30 --retry-on-http-error=500,502,503,504 https://github.com/jedisct1/libsodium/releases/download/1.0.20-RELEASE/libsodium-1.0.20.tar.gz
           echo "ebb65ef6ca439333c2bb41a0c1990587288da07f6c7fd07cb3a18cc18d30ce19  libsodium-1.0.20.tar.gz" | sha256sum -c
           tar xzf libsodium-1.0.20.tar.gz
@@ -133,7 +140,7 @@ jobs:
           echo "6653ef5910f17954861fe72332e68b03ca6e4d9c7160eb3a8de5a5a913bfab43  zeromq-4.3.5.tar.gz" | sha256sum -c
           tar xzf zeromq-4.3.5.tar.gz
           cd zeromq-4.3.5
-          cmake -B build $CMAKE_ANDROID -DCMAKE_BUILD_TYPE=Release -DCMAKE_POSITION_INDEPENDENT_CODE=ON -DCMAKE_INSTALL_PREFIX="$PREFIX" -DBUILD_SHARED=OFF -DBUILD_STATIC=ON -DZMQ_BUILD_TESTS=OFF -DWITH_LIBSODIUM=OFF -DWITH_LIBBSD=OFF -DWITH_DOCS=OFF -DWITH_PERF_TOOL=OFF -DENABLE_DRAFTS=OFF -DENABLE_CPACK=OFF -DCMAKE_POLICY_VERSION_MINIMUM=3.5
+          cmake -B build $CMAKE_ANDROID $CMAKE_CCACHE -DCMAKE_BUILD_TYPE=Release -DCMAKE_POSITION_INDEPENDENT_CODE=ON -DCMAKE_INSTALL_PREFIX="$PREFIX" -DBUILD_SHARED=OFF -DBUILD_STATIC=ON -DZMQ_BUILD_TESTS=OFF -DWITH_LIBSODIUM=OFF -DWITH_LIBBSD=OFF -DWITH_DOCS=OFF -DWITH_PERF_TOOL=OFF -DENABLE_DRAFTS=OFF -DENABLE_CPACK=OFF -DCMAKE_POLICY_VERSION_MINIMUM=3.5
           cmake --build build -j3
           cmake --install build
 
@@ -146,7 +153,7 @@ jobs:
           cd boost_1_85_0
           # b2 runs on the runner, so it is built with the compiler of the runner and not the one of the NDK
           CC=cc CXX=c++ ./bootstrap.sh --with-libraries=chrono,date_time,filesystem,locale,program_options,regex,serialization,system,thread
-          echo "using clang : android : $CXX : <archiver>$AR <ranlib>$RANLIB ;" > user-config.jam
+          echo "using clang : android : ccache $CXX : <archiver>$AR <ranlib>$RANLIB ;" > user-config.jam
           ./b2 -j3 --user-config=user-config.jam --prefix="$PREFIX" toolset=clang-android target-os=android architecture=${{ matrix.boost_arch }} address-model=64 cxxflags=-fPIC cflags=-fPIC link=static runtime-link=shared boost.locale.icu=off install
 
       - name: Build monero-project
