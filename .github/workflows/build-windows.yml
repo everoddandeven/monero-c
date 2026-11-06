@@ -18,7 +18,7 @@ jobs:
 
     env:
       CCACHE_DIR: ${{ github.workspace }}/.ccache
-      # monero-project finds ccache by itself, the other projects get it as the compiler launcher
+      # every project gets ccache as the compiler launcher, and monero-project's own detection of it is turned off, so that it is not wrapped twice
       CMAKE_CCACHE: -DCMAKE_C_COMPILER_LAUNCHER=ccache -DCMAKE_CXX_COMPILER_LAUNCHER=ccache
       CCACHE_MAXSIZE: 1G
       CCACHE_COMPRESS: "1"
@@ -127,6 +127,8 @@ jobs:
             -D CMAKE_TOOLCHAIN_FILE="../../cmake/64-bit-toolchain.cmake" \
             -D MSYS2_FOLDER=$(cd $MINGW_PREFIX/.. && pwd -W) \
             -D USE_DEVICE_TREZOR=OFF \
+            -D USE_CCACHE=OFF \
+            $CMAKE_CCACHE \
             ../../
           make wallet cryptonote_protocol
 

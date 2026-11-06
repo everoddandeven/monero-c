@@ -24,7 +24,7 @@ jobs:
       AR: llvm-ar
       RANLIB: llvm-ranlib
       CCACHE_DIR: ${{ github.workspace }}/.ccache
-      # monero-project finds ccache by itself, the other projects get it as the compiler launcher
+      # every project gets ccache as the compiler launcher, and monero-project's own detection of it is turned off, so that it is not wrapped twice
       CMAKE_CCACHE: -DCMAKE_C_COMPILER_LAUNCHER=ccache -DCMAKE_CXX_COMPILER_LAUNCHER=ccache
       CCACHE_MAXSIZE: 1G
       CCACHE_COMPRESS: "1"
@@ -158,7 +158,7 @@ jobs:
           unset CC CXX AR RANLIB
           # BUILD_GUI_DEPS keeps -fPIE, which monero-project adds for the executables of Android, out of a shared library.
           # STACK_TRACE is off by itself on ARM, but on x86_64 monero-project finds a libunwind that does not build with the c++ library of the NDK
-          cmake $CMAKE_ANDROID -DSTATIC=ON -DBUILD_64=ON -DARCH="${{ matrix.march }}" -DCMAKE_BUILD_TYPE=Release -DUSE_DEVICE_TREZOR=OFF -DUSE_READLINE=OFF -DBUILD_GUI_DEPS=ON -DSTACK_TRACE=OFF -DBOOST_ROOT="$PREFIX" -DBoost_NO_SYSTEM_PATHS=ON ../../
+          cmake $CMAKE_ANDROID -DSTATIC=ON -DBUILD_64=ON -DARCH="${{ matrix.march }}" -DCMAKE_BUILD_TYPE=Release -DUSE_DEVICE_TREZOR=OFF -DUSE_READLINE=OFF -DBUILD_GUI_DEPS=ON -DSTACK_TRACE=OFF -DBOOST_ROOT="$PREFIX" -DBoost_NO_SYSTEM_PATHS=ON $CMAKE_CCACHE -DUSE_CCACHE=OFF ../../
           make -j3 wallet cryptonote_protocol
           cd ../../../../../../
 

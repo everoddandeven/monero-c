@@ -15,7 +15,7 @@ jobs:
     env:
       MACOSX_DEPLOYMENT_TARGET: "11.0"
       CCACHE_DIR: ${{ github.workspace }}/.ccache
-      # monero-project finds ccache by itself, the other projects get it as the compiler launcher
+      # every project gets ccache as the compiler launcher, and monero-project's own detection of it is turned off, so that it is not wrapped twice
       CMAKE_CCACHE: -DCMAKE_C_COMPILER_LAUNCHER=ccache -DCMAKE_CXX_COMPILER_LAUNCHER=ccache
       CCACHE_MAXSIZE: 1G
       CCACHE_COMPRESS: "1"
@@ -115,7 +115,7 @@ jobs:
           cd external/monero-cpp/external/monero-project
           mkdir -p build/release
           cd build/release
-          cmake -DSTATIC=ON -DBUILD_64=ON -DARCH="${{ matrix.march }}" -DCMAKE_BUILD_TYPE=Release -DUSE_DEVICE_TREZOR=OFF -DOPENSSL_ROOT_DIR="$OPENSSL_ROOT_DIR" ../../
+          cmake -DSTATIC=ON -DBUILD_64=ON -DARCH="${{ matrix.march }}" -DCMAKE_BUILD_TYPE=Release -DUSE_DEVICE_TREZOR=OFF -DOPENSSL_ROOT_DIR="$OPENSSL_ROOT_DIR" $CMAKE_CCACHE -DUSE_CCACHE=OFF ../../
           make -j3 wallet cryptonote_protocol
           cd ../../../../../../
 
