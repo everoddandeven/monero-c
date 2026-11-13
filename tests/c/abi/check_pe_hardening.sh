@@ -8,6 +8,7 @@
 #    MSYS2 doesn't turn the stack protector on, so the functions of monero-c had none until the build asked for it in CMakeLists.txt, while the
 #    libraries of monero-project, Boost and MSYS2 had it:
 #      measured before it, from the build of 0.4.0: abi 0% (304 functions), c++ 21.9%, c 13.7%
+#      measured with it, on the build of this check: abi 76.3%, c++ 22.5%, c 13.7%
 # 3. The exports: every function of the C ABI, and nothing that isn't Boost.Serialization or Boost.Archive. Those are the 1099 symbols that the
 #    headers of Boost mark with BOOST_SYMBOL_EXPORT and that a .def file doesn't remove (see TODO.md). Any other export, such as a symbol of OpenSSL
 #    or libsodium, fails the check.
@@ -48,8 +49,10 @@ done
 exports=$(sed -n '/Ordinal\/Name Pointer/,$p' <<< "$headers" | awk '/^[ \t]*\[ *[0-9]+\]/ { print $NF }' | sort -u)
 echo "exports: $(wc -l <<< "$exports")"
 exported_abi=$(grep '^monero_' <<< "$exports" || true)
-missing=$(comm -13 <(sort -u <<< "$exported_abi") <(sort -u "$expected"))
-extra=$(comm -23 <(sort -u <<< "$exported_abi") <(sort -u "$expected"))
+# a checkout on Windows can turn the line ends of the list into CRLF, which make every name of it different from the ones of the DLL
+expected_names=$(tr -d '\r' < "$expected" | sort -u)
+missing=$(comm -13 <(sort -u <<< "$exported_abi") <(cat <<< "$expected_names"))
+extra=$(comm -23 <(sort -u <<< "$exported_abi") <(cat <<< "$expected_names"))
 [ -z "$missing" ] || fail "missing from the DLL: $(tr '\n' ' ' <<< "$missing")"
 [ -z "$extra" ] || fail "not in $expected: $(tr '\n' ' ' <<< "$extra")"
 foreign=$(grep -v '^monero_' <<< "$exports" | c++filt | grep -Ev '^((vtable|typeinfo|typeinfo name|guard variable|VTT|construction vtable) for )?((non-virtual |virtual )?thunk to )?boost::(serialization|archive)::' || true)

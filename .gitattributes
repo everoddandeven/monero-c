@@ -2,3 +2,5 @@
 *.sh text eol=lf
 packaging/common/headers.txt text eol=lf
 *.awk text eol=lf
+# read by the check of the exports of the DLL, in bash, and by CMake
+tests/c/abi/monero_c.symbols text eol=lf
