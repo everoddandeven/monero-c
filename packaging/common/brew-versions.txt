@@ -1,0 +1,33 @@
+# The versions of the brew formulae that the macOS build links into the library, as the runners had them on 2026-11-12 (run 43146443636 of Build,
+# the step "Install dependencies" of build-macos.yml). check-brew-versions.sh compares them with the ones that the runner installs.
+#
+# Brew can't be pinned to a version: HOMEBREW_NO_AUTO_UPDATE=1 makes it install what the image of the runner knows, and the images of the two
+# architectures differ and change every few weeks. So a change is a warning and not a failure. Read it, and when the change is in the library of a
+# release, put the new version here and in the notes of the release. BREW_VERSIONS_STRICT=1 makes it a failure.
+#
+# These are the versions that monero-cpp has too: its Build workflow (woodser/monero-cpp, run 43418483944 on master, 2026-11-13) records the same
+# numbers for the formulae that it has, on the same runners (macos-15 and macos-15-intel), and it pins none. It doesn't install ccache and libevent,
+# which this build does (libevent is linked by the static build of monero-c), and libnghttp2 comes there with another formula. It unlinks openssl@4
+# as this build does, and unbound too. When the numbers of monero-cpp change, read the run of its Build workflow, and change them here too.
+#
+# <architecture, as uname -m says it> <formula> <version, as brew list --versions says it>
+arm64 expat 2.10.0
+arm64 libevent 2.1.13_1
+arm64 libnghttp2 1.71.0
+arm64 libpgm 5.3.128
+arm64 libsodium 1.0.22
+arm64 libunwind-headers 201
+arm64 miniupnpc 2.3.3
+arm64 openssl@3 3.5.9
+arm64 protobuf 36.2
+arm64 zeromq 4.3.5_2
+x86_64 expat 2.8.3
+x86_64 libevent 2.1.13
+x86_64 libnghttp2 1.70.0
+x86_64 libpgm 5.3.128
+x86_64 libsodium 1.0.22
+x86_64 libunwind-headers 201
+x86_64 miniupnpc 2.3.3
+x86_64 openssl@3 3.6.3
+x86_64 protobuf 36.0
+x86_64 zeromq 4.3.5_2
