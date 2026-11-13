@@ -118,6 +118,10 @@ jobs:
       - name: Check exported symbols
         run: cmake -DLIBRARY=artifact/libmonero_c.dylib -DEXPECTED=tests/c/abi/monero_c.symbols -P tests/c/abi/check_symbols.cmake
 
+      # the canary: the library imports the handler and the guard, and many functions call the handler
+      - name: Check hardening
+        run: tests/c/abi/check_macho_hardening.sh artifact/libmonero_c.dylib
+
   library-windows:
     name: Windows x86_64
     runs-on: windows-latest
@@ -128,6 +132,10 @@ jobs:
         shell: msys2 {0}
 
     steps:
+      # the scripts of tests/c/abi and the list of the exported functions. .gitattributes keeps their line ends as LF, which bash needs
+      - name: Checkout repository
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
       - name: Download monero-c build
         uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
         with:
@@ -159,3 +167,8 @@ jobs:
             echo "native library depends on non-system runtime DLLs above"
             exit 1
           fi
+
+      # the image flags (ASLR, DEP), how many functions of each kind have a stack protector, and the exports: the C ABI, and nothing but Boost
+      # that the headers of Boost mark for export. It reads the symbols of the DLL of the build
+      - name: Check hardening and exports
+        run: bash tests/c/abi/check_pe_hardening.sh artifact/libmonero_c.dll tests/c/abi/monero_c.symbols

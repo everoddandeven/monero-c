@@ -37,6 +37,16 @@ if (CMAKE_SYSTEM_NAME STREQUAL "Linux" OR ANDROID)
       add_compile_options(-fcf-protection=full)
     endif()
   endif()
+elseif (MINGW)
+  # the gcc of MSYS2 doesn't turn the stack protector on, so none of the functions of monero-c had a canary on Windows, where the libraries of
+  # monero-project, Boost and MSYS2 do. The runtime of mingw-w64 has __stack_chk_fail and the guard. tests/c/abi/check_pe_hardening.sh counts them
+  include(CheckCCompilerFlag)
+  include(CheckCXXCompilerFlag)
+  check_c_compiler_flag(-fstack-protector-strong MONERO_C_C_FSTACK_PROTECTOR_STRONG)
+  check_cxx_compiler_flag(-fstack-protector-strong MONERO_C_CXX_FSTACK_PROTECTOR_STRONG)
+  if (MONERO_C_C_FSTACK_PROTECTOR_STRONG AND MONERO_C_CXX_FSTACK_PROTECTOR_STRONG)
+    add_compile_options(-fstack-protector-strong)
+  endif()
 endif()
 
 if (CMAKE_C_COMPILER_ID MATCHES "GNU|Clang" AND CMAKE_CXX_COMPILER_ID MATCHES "GNU|Clang")
