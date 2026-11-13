@@ -2,6 +2,12 @@
 
 ## Unreleased
 
+### Changed
+
+* monero-cpp is updated to its master (6178753). It fixes two types of its models. `includeOutputs` of a tx query is a bool in the model, and it was a
+  64-bit number, so a query that was copied or written had `1` where it has `true` now. `numDummyOutputs` of a tx that a wallet of a server makes is read
+  as the 32-bit number that the model has. monero-project is the same commit as before.
+
 ### Added
 
 The functions that monero-python and monero-java have in the interface of their wallet and that the ABI did not, found by comparing the headers with
