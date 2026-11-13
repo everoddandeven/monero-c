@@ -5,14 +5,14 @@
 #
 # Apple clang turns the stack protector on (-fstack-protector-strong), so what is checked is that the library imports the guard and the handler of
 # the canary, and that many functions call the handler. The count is the number of calls to ___stack_chk_fail in the code, a call for each function
-# that has a canary. The library of 0.4.0 for Linux x86_64 has about 6200 of them, and the minimum is a sixth of that: a library built with no stack
-# protector, or whose libraries were, has a handful. The minimum was not measured on the library of macOS, since the one of the build is not read
-# anywhere else: if the first run of the check is under it, count the calls by hand (otool -tV library | grep -c ___stack_chk_fail) and set it.
+# that has a canary. The library of the build has 3498 of them on arm64 and 3385 on x86_64 (the one of Linux x86_64 has about 6200, since more of its
+# libraries are built with the flags of this project), and the minimum is about half of that: a library built with no stack protector, or whose
+# libraries were, has a handful.
 set -euo pipefail
 export LC_ALL=C
 
 library="${1:?usage: check_macho_hardening.sh library.dylib}"
-MIN_CANARY_CALLS=1000
+MIN_CANARY_CALLS=1700
 
 failed=0
 fail() {

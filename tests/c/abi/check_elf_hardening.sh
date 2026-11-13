@@ -12,6 +12,7 @@
 # The minimums are about half of what the build of 0.4.0 has (percent of the functions that call __stack_chk_fail, and, on x86_64, that start with
 # endbr64), and far from what a build with no flags has (C: 1.3%, ABI: under 1%, endbr64: under 3%):
 #   measured on x86_64 : stack protector: abi 75.8%, c++ 20.4%, c 15.5%;  endbr64: abi 100%, c++ 59.2%, c 89.0%
+#   measured on arm64  : stack protector: abi 76.3%, c++ 20.2%, c 15.8%  (no endbr64 on arm, and the check of it is for x86_64 only)
 # A kind that falls under its minimum is a flag that no longer reaches a library, or a library that was built without them.
 set -euo pipefail
 export LC_ALL=C
